@@ -1,0 +1,27 @@
+---
+const currentPath = Astro.url.pathname;
+---
+
+<nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+  <div class="max-w-4xl mx-auto px-4 py-4">
+    <div class="flex items-center justify-between">
+      <a href="/" class="text-xl font-bold text-black hover:text-gray-600 transition-colors">
+        Simon Balfe
+      </a>
+      <div class="flex items-center gap-6">
+        <a 
+          href="/" 
+          class={`text-black hover:text-gray-600 transition-colors font-medium ${currentPath === '/' ? 'border-b-2 border-black' : ''}`}
+        >
+          Home
+        </a>
+        <a 
+          href="/blog" 
+          class={`text-black hover:text-gray-600 transition-colors font-medium ${currentPath.startsWith('/blog') ? 'border-b-2 border-black' : ''}`}
+        >
+          Blog
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>

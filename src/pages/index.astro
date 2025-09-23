@@ -1,37 +1,11 @@
 ---
+import Layout from "../layouts/Layout.astro";
 import "../styles/global.css";
 import { Icon } from "astro-icon/components";
 ---
 
-<html lang="en">
-	<head>
-		<script
-			id="Cookiebot"
-			src="https://consent.cookiebot.com/uc.js"
-			data-cbid="881d8353-c0ba-4cb0-8132-b7b5011df002"
-			data-blockingmode="auto"
-			type="text/javascript"></script>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Simon Balfe | Software Engineer</title>
-	</head>
-	<!-- Google tag (gtag.js) -->
-	<script
-		type="text/partytown"
-		async
-		src="https://www.googletagmanager.com/gtag/js?id=G-972ZSH6YNG"></script>
-	<script type="text/partytown">
-		window.dataLayer = window.dataLayer || [];
-		function gtag() {
-			dataLayer.push(arguments);
-		}
-		gtag("js", new Date());
-
-		gtag("config", "G-972ZSH6YNG");
-	</script>
-	<body class="bg-white text-black min-h-screen font-sans">
+<Layout>
+	<div class="bg-white text-black min-h-screen font-sans">
 		<div class="max-w-4xl mx-auto px-4 py-8 md:px-6 md:py-12">
 			<div>
 				<header class="mb-20">
@@ -76,9 +50,7 @@ import { Icon } from "astro-icon/components";
 								</p>
 							</div>
 						</div>
-						<div
-							class="flex-shrink-0 order-1 md:order-2"
-						>
+						<div class="flex-shrink-0 order-1 md:order-2">
 							<div
 								class="w-20 h-20 md:w-28 md:h-28 rounded-full overflow-hidden bg-white ring-2 ring-gray-300"
 							>
@@ -93,17 +65,28 @@ import { Icon } from "astro-icon/components";
 
 					<div class="flex flex-wrap gap-2 md:gap-4 mt-6 md:mt-8">
 						<a
+							href="/blog"
+							class="px-3 py-2 md:px-4 md:py-3 bg-white text-black rounded-full transition-all duration-300 hover:bg-gray-100 hover:scale-105 flex items-center gap-2 md:gap-3 border border-gray-300 shadow-lg hover:shadow-xl"
+						>
+							<span class="text-sm md:text-base font-bold">Blog</span>
+						</a>
+						<a
 							href="https://x.com/simonbalfe"
 							class="px-3 py-2 md:px-4 md:py-3 bg-white text-black rounded-full transition-all duration-300 hover:bg-gray-100 hover:scale-105 flex items-center gap-2 md:gap-3 border border-gray-300 shadow-lg hover:shadow-xl"
 						>
 							<Icon name="x" />
-							<span class="text-sm md:text-base font-bold">@simonbalfe</span>
+							<span class="text-sm md:text-base font-bold"
+								>@simonbalfe</span
+							>
 						</a>
 						<a
 							href="https://linkedin.com/in/simon-balfe-49a4321b8"
 							class="px-3 py-2 md:px-4 md:py-3 bg-white text-black rounded-full transition-all duration-300 hover:bg-gray-100 hover:scale-105 flex items-center gap-2 md:gap-3 border border-gray-300 shadow-lg hover:shadow-xl"
 						>
-							<Icon name="linkedin" class="w-5 h-5 md:w-6 md:h-6" />
+							<Icon
+								name="linkedin"
+								class="w-5 h-5 md:w-6 md:h-6"
+							/>
 						</a>
 					</div>
 				</header>
@@ -397,5 +380,5 @@ import { Icon } from "astro-icon/components";
 				</div>
 			</div>
 		</div>
-	</body>
-</html>
+	</div>
+</Layout>
