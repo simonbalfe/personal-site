@@ -16,6 +16,35 @@ import { Icon } from "astro-icon/components";
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<title>Simon Balfe | Software Engineer</title>
+		<style>
+			.typewriter {
+				overflow: hidden;
+				white-space: nowrap;
+				width: 0;
+				animation: typing 2s steps(40, end) forwards;
+			}
+
+			.typewriter-delay-0 { animation-delay: 0s; }
+			.typewriter-delay-1 { animation-delay: 0.3s; }
+			.typewriter-delay-2 { animation-delay: 0.6s; }
+			.typewriter-delay-3 { animation-delay: 0.9s; }
+			.typewriter-delay-4 { animation-delay: 1.2s; }
+			.typewriter-delay-5 { animation-delay: 1.5s; }
+			.typewriter-delay-6 { animation-delay: 1.8s; }
+			.typewriter-delay-7 { animation-delay: 2.1s; }
+			.typewriter-delay-8 { animation-delay: 2.4s; }
+			.typewriter-delay-9 { animation-delay: 2.7s; }
+			.typewriter-delay-10 { animation-delay: 3s; }
+			.typewriter-delay-11 { animation-delay: 3.3s; }
+			.typewriter-delay-12 { animation-delay: 3.6s; }
+			.typewriter-delay-13 { animation-delay: 3.9s; }
+			.typewriter-delay-14 { animation-delay: 4.2s; }
+
+			@keyframes typing {
+				from { width: 0 }
+				to { width: 100% }
+			}
+		</style>
 	</head>
 	<!-- Google tag (gtag.js) -->
 	<script type="text/partytown" async src="https://www.googletagmanager.com/gtag/js?id=G-972ZSH6YNG"
@@ -36,19 +65,19 @@ import { Icon } from "astro-icon/components";
 					<header class="mb-20">
 						<div class="flex items-start justify-between mb-12">
 							<div class="flex-1">
-								<h1 class="text-3xl font-bold text-white mb-1">Simon Balfe</h1>
-								<p class="text-white mb-6 flex items-center gap-1">
+								<h1 class="text-3xl font-bold text-white mb-1 typewriter typewriter-delay-0">Simon Balfe</h1>
+								<p class="text-white mb-6 flex items-center gap-1 typewriter typewriter-delay-1">
 									<span class="text-white">📍</span> Cambridge, England, UK
 								</p>
 								
-								<p class="text-white text-lg mb-4 font-bold">
+								<p class="text-white text-lg mb-4 font-bold typewriter typewriter-delay-2">
 									Software engineer building AI automations for lead generation, cold outreach and sales.
 								</p>
 								<div class="space-y-3 text-white">
-									<p>- Endpoint security and testing infrastructure expertise</p>
-									<p>- Swift & C++ development for security solutions</p>
-									<p>- CI/CD pipelines and legacy codebase modernization</p>
-									<p>- Multi-threaded systems and scalable software architecture</p>
+									<p class="typewriter typewriter-delay-3">- SaaS product development and automation workflows</p>
+									<p class="typewriter typewriter-delay-4">- Building and scaling n8n automations for business processes</p>
+									<p class="typewriter typewriter-delay-5">- Integrating APIs and third-party services for SaaS platforms</p>
+									<p class="typewriter typewriter-delay-6">- Streamlining operations with custom automation pipelines</p>
 									
 								</div>
 							</div>
@@ -79,7 +108,7 @@ import { Icon } from "astro-icon/components";
 			</header>
 
 					<section class="mb-16">
-						<h2 class="text-3xl font-bold text-white mb-8">
+						<h2 class="text-3xl font-bold text-white mb-8 typewriter typewriter-delay-7">
 							Work Experience
 						</h2>
 						
@@ -90,7 +119,7 @@ import { Icon } from "astro-icon/components";
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🛡️
 										</div>
-										<span class="text-white text-xl">Software Engineer @ Darktrace</span>
+										<span class="text-white text-xl typewriter typewriter-delay-8">Software Engineer @ Darktrace</span>
 									</div>
 									<div class="flex items-center gap-2">
 										<span class="text-white text-xl">2024 - present</span>
@@ -112,7 +141,7 @@ import { Icon } from "astro-icon/components";
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🎮
 										</div>
-										<span class="text-white text-xl">Software Engineer in Test Intern @ Sony Interactive Entertainment</span>
+										<span class="text-white text-xl typewriter typewriter-delay-9">Software Engineer in Test Intern @ Sony Interactive Entertainment</span>
 									</div>
 									<div class="flex items-center gap-2">
 										<span class="text-white text-xl">2023 - 2024</span>
@@ -131,7 +160,7 @@ import { Icon } from "astro-icon/components";
 					</section>
 
 					<section class="mb-16">
-						<h2 class="text-3xl font-bold text-white mb-8">
+						<h2 class="text-3xl font-bold text-white mb-8 typewriter typewriter-delay-10">
 							Education
 						</h2>
 						
@@ -142,7 +171,7 @@ import { Icon } from "astro-icon/components";
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🎓
 										</div>
-										<span class="text-white text-xl">BSc Computer Science @ University of Bath</span>
+										<span class="text-white text-xl typewriter typewriter-delay-11">BSc Computer Science @ University of Bath</span>
 									</div>
 									<div class="flex items-center gap-2">
 										<span class="text-white text-xl">2020 - 2024</span>
@@ -161,7 +190,7 @@ import { Icon } from "astro-icon/components";
 					</section>
 
 					<section class="mb-16">
-						<h2 class="text-3xl font-bold text-white mb-8">
+						<h2 class="text-3xl font-bold text-white mb-8 typewriter typewriter-delay-12">
 							Projects & Achievements
 						</h2>
 						
@@ -172,7 +201,7 @@ import { Icon } from "astro-icon/components";
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🏆
 										</div>
-										<span class="text-white text-xl">Unity 2D Game Hackathon Winner</span>
+										<span class="text-white text-xl typewriter typewriter-delay-13">Unity 2D Game Hackathon Winner</span>
 									</div>
 									<div class="flex items-center gap-2">
 										<span class="text-white text-xl">2024</span>
@@ -194,7 +223,7 @@ import { Icon } from "astro-icon/components";
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🥾
 										</div>
-										<span class="text-white text-xl">Duke of Edinburgh Award</span>
+										<span class="text-white text-xl typewriter typewriter-delay-14">Duke of Edinburgh Award</span>
 									</div>
 									<div class="flex items-center gap-2">
 										<span class="text-white text-xl">2015</span>
