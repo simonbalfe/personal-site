@@ -41,5 +41,16 @@ const { title = "Simon Balfe", description } = Astro.props;
 	<body>
 		<Navbar />
 		<slot />
+		<div class="mt-8">
+			<iframe
+				src="https://embeds.beehiiv.com/3cc42c6d-a9fe-4839-9f24-e1acee5dc3ef"
+				data-test-id="beehiiv-embed"
+				width="100%"
+				height="320"
+				frameborder="0"
+				scrolling="no"
+				style="border-radius: 4px; margin: 0; background-color: transparent;"
+			></iframe>
+		</div>
 	</body>
 </html>
