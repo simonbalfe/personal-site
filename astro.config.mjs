@@ -11,7 +11,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()]
   },
-  integrations: [icon(), react(), partytown(
+  integrations: [icon({
+    iconDir: "src/icons"
+  }), react(), partytown(
     {
       config: {
         forward: ['dataLayer.push']
