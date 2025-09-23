@@ -24,6 +24,15 @@ import { Icon } from "astro-icon/components";
 				animation: typing 2s steps(40, end) forwards;
 			}
 
+			@media (max-width: 768px) {
+				.typewriter {
+					white-space: normal;
+					overflow: visible;
+					width: 100%;
+					animation: none;
+				}
+			}
+
 			.typewriter-delay-0 { animation-delay: 0s; }
 			.typewriter-delay-1 { animation-delay: 0.3s; }
 			.typewriter-delay-2 { animation-delay: 0.6s; }
@@ -60,29 +69,30 @@ import { Icon } from "astro-icon/components";
 	</script>
 	<body class="bg-black text-white min-h-screen font-sans">
 		
-		<div class="max-w-4xl mx-auto px-6 py-12">
+		<div class="max-w-4xl mx-auto px-4 py-8 md:px-6 md:py-12">
 			<div>
 					<header class="mb-20">
-						<div class="flex items-start justify-between mb-12">
-							<div class="flex-1">
-								<h1 class="text-3xl font-bold text-white mb-1 typewriter typewriter-delay-0">Simon Balfe</h1>
+						<div class="flex flex-col md:flex-row md:items-start md:justify-between mb-8 md:mb-12">
+							<div class="flex-1 order-2 md:order-1">
+								<h1 class="text-2xl md:text-3xl font-bold text-white mb-1 typewriter typewriter-delay-0">Simon Balfe</h1>
 								<p class="text-white mb-6 flex items-center gap-1 typewriter typewriter-delay-1">
 									<span class="text-white">📍</span> Cambridge, England, UK
 								</p>
 								
-								<p class="text-white text-lg mb-4 font-bold typewriter typewriter-delay-2">
+								<p class="text-white text-base md:text-lg mb-4 font-bold typewriter typewriter-delay-2">
 									Software engineer building AI automations for lead generation, cold outreach and sales.
 								</p>
-								<div class="space-y-3 text-white">
+								<div class="space-y-2 md:space-y-3 text-white text-sm md:text-base">
 									<p class="typewriter typewriter-delay-3">- SaaS product development and automation workflows</p>
 									<p class="typewriter typewriter-delay-4">- Building and scaling n8n automations for business processes</p>
 									<p class="typewriter typewriter-delay-5">- Integrating APIs and third-party services for SaaS platforms</p>
 									<p class="typewriter typewriter-delay-6">- Streamlining operations with custom automation pipelines</p>
+
 									
 								</div>
 							</div>
-							<div class="flex-shrink-0 ml-6">
-								<div class="w-28 h-28 rounded-full overflow-hidden bg-black ring-2 ring-black">
+							<div class="flex-shrink-0 mb-6 md:mb-0 md:ml-6 order-1 md:order-2 self-center md:self-start">
+								<div class="w-20 h-20 md:w-28 md:h-28 rounded-full overflow-hidden bg-black ring-2 ring-black">
 					<img
 						src="/me.jpg"
 						alt="Simon Balfe"
@@ -92,37 +102,37 @@ import { Icon } from "astro-icon/components";
 							</div>
 						</div>
 
-						<div class="flex gap-4 mt-8">
-							<a href="https://x.com/simonbalfe" class="px-3 py-2 bg-black text-white rounded-full transition-colors hover:bg-gray-800 flex items-center gap-2 border border-gray-700 shadow-lg">
+						<div class="flex flex-wrap gap-2 md:gap-4 mt-6 md:mt-8">
+							<a href="https://x.com/simonbalfe" class="px-2 py-1 md:px-3 md:py-2 bg-black text-white rounded-full transition-colors hover:bg-gray-800 flex items-center gap-1 md:gap-2 border border-gray-700 shadow-lg">
 								<Icon name="x"/>
 								<span class="text-sm font-medium">@simonbalfe</span>
 							</a>
-							<a href="https://linkedin.com/in/simon-balfe-49a4321b8" class="px-3 py-2 bg-black text-white rounded-full transition-colors hover:bg-gray-800 flex items-center gap-2 border border-gray-700 shadow-lg">
+							<a href="https://linkedin.com/in/simon-balfe-49a4321b8" class="px-2 py-1 md:px-3 md:py-2 bg-black text-white rounded-full transition-colors hover:bg-gray-800 flex items-center gap-1 md:gap-2 border border-gray-700 shadow-lg">
 								<Icon name="linkedin" class="w-6 h-6"/>
 								<span class="text-sm font-medium">@simonbalfe</span>
 							</a>
-							<a href="mailto:sbmain17@gmail.com" class="px-3 py-2 bg-black text-white rounded-full transition-colors hover:bg-gray-800 flex items-center gap-2 border border-gray-700 shadow-lg">
+							<a href="mailto:sbmain17@gmail.com" class="px-2 py-1 md:px-3 md:py-2 bg-black text-white rounded-full transition-colors hover:bg-gray-800 flex items-center gap-1 md:gap-2 border border-gray-700 shadow-lg">
 								<Icon name="email" class="w-6 h-6"/>
 							</a>
 				</div>
 			</header>
 
-					<section class="mb-16">
-						<h2 class="text-3xl font-bold text-white mb-8 typewriter typewriter-delay-7">
+					<section class="mb-12 md:mb-16">
+						<h2 class="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 typewriter typewriter-delay-7">
 							Work Experience
 						</h2>
 						
 						<div class="space-y-0">
 							<details class="group">
-								<summary class="flex items-center justify-between cursor-pointer py-2 transition-colors">
-									<div class="flex items-center gap-3">
+								<summary class="flex items-start md:items-center justify-between cursor-pointer py-2 transition-colors">
+									<div class="flex items-start md:items-center gap-3 flex-1 min-w-0">
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🛡️
 										</div>
-										<span class="text-white text-xl typewriter typewriter-delay-8">Software Engineer @ Darktrace</span>
+										<span class="text-white text-lg md:text-xl typewriter typewriter-delay-8 break-words">Software Engineer @ Darktrace</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<span class="text-white text-xl">2024 - present</span>
+										<span class="text-white text-sm md:text-xl">2024 - present</span>
 										<svg class="w-4 h-4 text-white transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
 										</svg>
@@ -136,15 +146,15 @@ import { Icon } from "astro-icon/components";
 							</details>
 
 							<details class="group">
-								<summary class="flex items-center justify-between cursor-pointer py-2 transition-colors">
-									<div class="flex items-center gap-3">
+								<summary class="flex items-start md:items-center justify-between cursor-pointer py-2 transition-colors">
+									<div class="flex items-start md:items-center gap-3 flex-1 min-w-0">
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🎮
 										</div>
-										<span class="text-white text-xl typewriter typewriter-delay-9">Software Engineer in Test Intern @ Sony Interactive Entertainment</span>
+										<span class="text-white text-lg md:text-xl typewriter typewriter-delay-9 break-words">Software Engineer in Test Intern @ Sony Interactive Entertainment</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<span class="text-white text-xl">2023 - 2024</span>
+										<span class="text-white text-sm md:text-xl">2023 - 2024</span>
 										<svg class="w-4 h-4 text-white transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
 										</svg>
@@ -159,22 +169,22 @@ import { Icon } from "astro-icon/components";
 						</div>
 					</section>
 
-					<section class="mb-16">
-						<h2 class="text-3xl font-bold text-white mb-8 typewriter typewriter-delay-10">
+					<section class="mb-12 md:mb-16">
+						<h2 class="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 typewriter typewriter-delay-10">
 							Education
 						</h2>
 						
 						<div class="space-y-0">
 							<details class="group">
-								<summary class="flex items-center justify-between cursor-pointer py-2 transition-colors">
-									<div class="flex items-center gap-3">
+								<summary class="flex items-start md:items-center justify-between cursor-pointer py-2 transition-colors">
+									<div class="flex items-start md:items-center gap-3 flex-1 min-w-0">
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🎓
 										</div>
-										<span class="text-white text-xl typewriter typewriter-delay-11">BSc Computer Science @ University of Bath</span>
+										<span class="text-white text-lg md:text-xl typewriter typewriter-delay-11 break-words">BSc Computer Science @ University of Bath</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<span class="text-white text-xl">2020 - 2024</span>
+										<span class="text-white text-sm md:text-xl">2020 - 2024</span>
 										<svg class="w-4 h-4 text-white transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
 										</svg>
@@ -189,22 +199,22 @@ import { Icon } from "astro-icon/components";
 						</div>
 					</section>
 
-					<section class="mb-16">
-						<h2 class="text-3xl font-bold text-white mb-8 typewriter typewriter-delay-12">
+					<section class="mb-12 md:mb-16">
+						<h2 class="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 typewriter typewriter-delay-12">
 							Projects & Achievements
 						</h2>
 						
 						<div class="space-y-0">
 							<details class="group">
-								<summary class="flex items-center justify-between cursor-pointer py-2 transition-colors">
-									<div class="flex items-center gap-3">
+								<summary class="flex items-start md:items-center justify-between cursor-pointer py-2 transition-colors">
+									<div class="flex items-start md:items-center gap-3 flex-1 min-w-0">
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🏆
 										</div>
-										<span class="text-white text-xl typewriter typewriter-delay-13">Unity 2D Game Hackathon Winner</span>
+										<span class="text-white text-lg md:text-xl typewriter typewriter-delay-13 break-words">Unity 2D Game Hackathon Winner</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<span class="text-white text-xl">2024</span>
+										<span class="text-white text-sm md:text-xl">2024</span>
 										<svg class="w-4 h-4 text-white transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
 										</svg>
@@ -218,15 +228,15 @@ import { Icon } from "astro-icon/components";
 							</details>
 
 							<details class="group">
-								<summary class="flex items-center justify-between cursor-pointer py-2 transition-colors">
-									<div class="flex items-center gap-3">
+								<summary class="flex items-start md:items-center justify-between cursor-pointer py-2 transition-colors">
+									<div class="flex items-start md:items-center gap-3 flex-1 min-w-0">
 										<div class="w-8 h-8 flex items-center justify-center text-lg">
 											🥾
 										</div>
-										<span class="text-white text-xl typewriter typewriter-delay-14">Duke of Edinburgh Award</span>
+										<span class="text-white text-lg md:text-xl typewriter typewriter-delay-14">Duke of Edinburgh Award</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<span class="text-white text-xl">2015</span>
+										<span class="text-white text-sm md:text-xl">2015</span>
 										<svg class="w-4 h-4 text-white transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
 										</svg>
