@@ -2,6 +2,8 @@
 import Layout from "../layouts/Layout.astro";
 import "../styles/global.css";
 import { Icon } from "astro-icon/components";
+import { Image } from "astro:assets";
+import profileImage from "../images/me.jpg";
 ---
 
 <Layout>
@@ -28,10 +30,12 @@ import { Icon } from "astro-icon/components";
 								<div
 									class="w-16 h-16 md:w-28 md:h-28 rounded-full overflow-hidden bg-white ring-2 ring-gray-300"
 								>
-									<img
-										src="/src/images/me.jpg"
+									<Image
+										src={profileImage}
 										alt="Simon Balfe"
 										class="w-full h-full object-cover"
+										width={112}
+										height={112}
 									/>
 								</div>
 							</div>
