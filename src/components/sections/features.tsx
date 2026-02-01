@@ -1,87 +1,64 @@
-import { Images, Layers, ToggleLeft, Users2 } from 'lucide-react';
+import { Code2, Database, Globe, Rocket } from 'lucide-react';
 
 import { PlusSigns } from '@/components/icons/plus-signs';
 import { cn } from '@/lib/utils';
 const features = [
   {
-    icon: Layers,
+    icon: Code2,
     title: (
       <>
-        Schema
+        Full Stack
         <br />
-        Builder
+        Development
       </>
     ),
-    description: 'Design content structures your way.',
+    description: 'End-to-end solutions.',
     subDescription:
-      'Scalar CMS gives you full control over content with a streamlined, API-first experience — perfect for teams who want speed without sacrificing flexibility.',
-    className: '!pb-0',
-    images: [
-      {
-        src: '/images/landing/feature-1.webp',
-        alt: 'Schema Builder',
-        width: 700,
-        height: 320,
-      },
-    ],
+      'Building complete applications with TypeScript, Next.js, and TailwindCSS on the frontend, with Python and Node.js powering the backend.',
   },
   {
-    icon: Users2,
-    title: 'Real Time Collaboration',
-    description: 'Built for content teams.',
+    icon: Database,
+    title: 'Cybersecurity',
+    description: 'Secure by design.',
     subDescription:
-      'Draft, review, and publish content with confidence. Autosave, rich text editing, role-based permissions, and revision history come standard.',
-    className: '!pb-0',
-    images: [
-      {
-        src: '/images/landing/feature-2-1.webp',
-        alt: 'Real Time Collaboration',
-        width: 620,
-        height: 108,
-      },
-      {
-        src: '/images/landing/feature-2-2.webp',
-        alt: 'Real Time Collaboration',
-        width: 620,
-        height: 108,
-      },
-      {
-        src: '/images/landing/feature-2-3.webp',
-        alt: 'Real Time Collaboration',
-        width: 620,
-        height: 108,
-      },
-    ],
+      'Experience in threat detection and security systems at Darktrace. Building software with security-first principles and best practices.',
   },
   {
-    icon: Images,
-    title: 'Asset Management',
-    description: 'Organize your media like a pro.',
+    icon: Globe,
+    title: 'Systems Programming',
+    description: 'Low-level expertise.',
     subDescription:
-      'Upload, crop, tag, and reuse images, videos, and docs with our sleek asset manager. Automatically optimizes files and handles CDN delivery.',
+      'Proficient in C++ and Swift for high-performance applications. Deep experience with macOS and Linux system development.',
   },
   {
-    icon: ToggleLeft,
-    title: 'Granular Permissions',
-    description: 'Control who does what.',
+    icon: Rocket,
+    title: 'DevOps & Cloud',
+    description: 'Ship with confidence.',
     subDescription:
-      'Create roles for editors, developers, and guests with precision. Lock down fields, models, or even specific actions.',
+      'Docker containerization, AWS cloud infrastructure, and automated testing pipelines. Quality engineering experience from PlayStation.',
   },
 ];
 
 export function Features() {
   return (
     <section className="container">
+      {/* Section Heading */}
+      <div className="bordered-div-padding border border-t-0">
+        <h2 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-4xl">
+          What I Do
+        </h2>
+      </div>
+      
       <div className="grid grid-cols-1 border border-t-0 md:grid-cols-2">
         {features.map((feature, index) => (
           <div
             key={index}
             className={cn(
               'bordered-div-padding relative space-y-8',
-              index == 0 && 'border-b md:border-e',
-              index == 1 && 'border-b md:border-b-0',
-              index == 3 && 'border-t md:border-s',
-              feature.className,
+              index === 0 && 'md:border-r',
+              index === 1 && 'border-t md:border-t-0',
+              index === 2 && 'border-t md:border-r',
+              index === 3 && 'border-t',
             )}
           >
             {index === 0 && (
@@ -90,32 +67,19 @@ export function Features() {
             )}
             <div className="space-y-4 md:space-y-6">
               <div className="space-y-4">
-                <h2 className="text-muted-foreground flex items-center gap-2 text-sm leading-snug font-medium md:text-base">
-                  <feature.icon className="size-5" />
+                <h2 className="text-muted-foreground flex items-center gap-2 text-base leading-snug font-medium md:text-lg">
+                  <feature.icon className="size-6" />
                   {feature.title}
                 </h2>
-                <h3 className="text-foreground font-weight-display leading-snug md:text-xl">
+                <h3 className="text-foreground font-weight-display text-xl leading-snug md:text-2xl">
                   {feature.description}
                 </h3>
               </div>
-              <p className="text-muted-foreground text-sm leading-relaxed md:text-base">
+              <p className="text-muted-foreground text-base leading-relaxed md:text-lg">
                 {feature.subDescription}
               </p>
             </div>
 
-            {feature.images && (
-              <div className="flex flex-col gap-4 mask-b-from-30% mask-b-to-95%">
-                {feature.images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image.src}
-                    alt={''}
-                    width={image.width}
-                    height={image.height}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         ))}
       </div>

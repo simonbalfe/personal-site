@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+
+import BlogPosts from '@/components/sections/blog-posts';
+import { SITE_TITLE } from '@/consts';
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import { transformBlogPost } from '@/lib/blog';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  
+  // Get all unique tags from posts
+  const tags = [...new Set(posts.flatMap(post => post.data.tags || []))];
+  
+  return tags.map(tag => ({
+    params: { tag: tag.toLowerCase().replace(/\s+/g, '-') },
+    props: { tag, posts },
+  }));
+}
+
+const { tag, posts } = Astro.props;
+
+// Filter posts by the current tag
+const filteredPosts = posts
+  .filter((post: any) => post.data.tags?.includes(tag))
+  .sort((a: any, b: any) => b.data.date.valueOf() - a.data.date.valueOf())
+  .map(transformBlogPost);
+
+// Get all unique tags for the filter
+const allTags = [...new Set(posts.flatMap((post: any) => post.data.tags || []))].sort();
+---
+
+<DefaultLayout title={`${tag} - ${SITE_TITLE}`} description={`Blog posts tagged with ${tag}`}>
+  <BlogPosts blogPosts={filteredPosts} allTags={allTags} activeTag={tag} client:load />
+</DefaultLayout>

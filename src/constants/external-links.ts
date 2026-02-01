@@ -3,14 +3,13 @@
  */
 export const EXTERNAL_LINKS = {
   // Social media
-  DISCORD: 'https://www.shadcnblocks.com/',
-  GITHUB: 'https://www.shadcnblocks.com/',
-  TWITTER: 'https://www.shadcnblocks.com/',
-  LINKEDIN: 'https://www.shadcnblocks.com/',
+  GITHUB: 'https://github.com/simonbalfe',
+  TWITTER: 'https://twitter.com/simonbalfe',
+  LINKEDIN: 'https://www.linkedin.com/in/simon-balfe-49a4321b8/',
 
   // Contact
-  EMAIL: 'mailto:team@scalar.com',
+  EMAIL: 'mailto:hello@simobalfe.dev',
 
   // Open Source
-  GITHUB_REPO: 'https://www.shadcnblocks.com/',
+  GITHUB_REPO: 'https://github.com/simonbalfe',
 };

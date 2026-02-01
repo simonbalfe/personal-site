@@ -1,97 +1,77 @@
 ---
-title: 'Code-first content modeling'
-description: 'Explore the advantages of code-first schemas and how Scalar brings structure and flexibility to your stack.'
+title: 'Why TypeScript Changed How I Write Code'
+description: 'My journey from JavaScript to TypeScript and the lessons learned about type safety, developer experience, and building maintainable applications.'
 date: '2025-04-11'
 authors:
-  [{ name: 'Rob Austin', image: '/images/blog/authors/robert-austin.webp' }]
-tags: ['Product']
+  [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
+tags: ['TypeScript', 'Development']
 coverImage: '/images/blog/blog-1.webp'
 ---
 
-## Code-first content modeling
+## Why TypeScript Changed How I Write Code
 
-Explore the advantages of code-first schemas and how Scalar brings structure and flexibility to your stack.
+My journey from JavaScript to TypeScript and the lessons learned about type safety, developer experience, and building maintainable applications.
 
 ## Introduction
 
-In the rapidly evolving landscape of content management, the code-first approach has emerged as a powerful paradigm for defining and managing content structures. Unlike traditional UI-based schema editors, code-first modeling puts developers in their comfort zone - working directly with code to define content models.
+When I first started writing JavaScript, I loved the freedom. No types to worry about, rapid prototyping, and the ability to just "make things work." But as my projects grew larger and more complex, I started to see the cracks. Runtime errors that could have been caught earlier, confusing code that was hard to refactor, and the constant fear of breaking something when making changes.
 
-## What is Code-First Content Modeling?
+## The Turning Point
 
-Code-first content modeling is an approach where content schemas are defined in code rather than through graphical user interfaces. This approach offers several advantages:
+The turning point came when I was debugging a production issue at 2 AM. A simple typo in a property name had slipped through code review and testing. That's when I decided to give TypeScript a serious try.
 
-- **Version control integration** - Your content models live alongside your application code
-- **Type safety** - Strong typing ensures consistency across your content
-- **Developer workflow** - Use familiar tools and processes for schema changes
-- **Reduced context switching** - Stay in your code editor rather than jumping between interfaces
+## What TypeScript Brings to the Table
 
-## How Scalar Implements the Code-First Approach
+TypeScript isn't just about adding types—it's about building confidence in your code:
 
-Scalar's approach to code-first content modeling emphasizes:
+- **Catch errors before runtime** - The compiler becomes your first line of defense
+- **Better refactoring** - Rename a variable and see all the places it's used
+- **Self-documenting code** - Types serve as living documentation
+- **IDE superpowers** - Autocomplete that actually works
 
-### 1. Type Definitions as Schema
+## Real-World Examples
+
+Here's how I structure my data models now:
 
 ```typescript
-type Author = {
-  name: string;
-  image: Media;
-  bio: RichText;
-};
+interface User {
+  id: string;
+  email: string;
+  profile: UserProfile;
+  createdAt: Date;
+}
 
-type BlogPost = {
-  title: string;
-  slug: string;
-  publishDate: Date;
-  author: Reference<Author>;
-  content: RichText;
-  tags: string[];
-};
+interface UserProfile {
+  displayName: string;
+  avatar?: string;
+  bio?: string;
+}
+
+async function getUserById(id: string): Promise<User | null> {
+  const user = await db.users.findUnique({ where: { id } });
+  return user;
+}
 ```
 
-### 2. Automatic API Generation
+## The Learning Curve
 
-From your type definitions, Scalar automatically generates:
+I won't pretend it was easy. There were moments of frustration:
 
-- GraphQL API endpoints
-- REST API endpoints
-- Admin UI forms
-- Validation logic
+- Generic types felt like learning a new language
+- Some third-party libraries had poor type definitions
+- Configuring `tsconfig.json` took trial and error
 
-### 3. Schema Evolution
+But the investment paid off. My code became more predictable, my team's code reviews became more productive, and I spent less time debugging runtime errors.
 
-As your application evolves, your content models can evolve with it:
+## Tips for Getting Started
 
-- Add new fields without breaking existing content
-- Migrate data between schema versions
-- Deploy schema changes alongside code changes
+If you're considering making the switch:
 
-![Code-first content modeling illustration showing type definitions and schema generation](/images/blog/blog-1.webp)
-
-## Benefits for Different Teams
-
-### For Developers
-
-- Work in familiar environments
-- Maintain consistency through type safety
-- Test schema changes with standard tools
-- Generate documentation automatically
-
-### For Content Teams
-
-- Structured content enforces quality standards
-- Predictable content models enable automation
-- Powerful querying capabilities
-- Reduced dependency on development for content structure changes
-
-## Getting Started with Code-First Modeling
-
-To start implementing code-first content modeling with Scalar:
-
-1. Define your content types in TypeScript
-2. Import the Scalar SDK
-3. Register your models
-4. Auto-generate your content API
+1. Start with `strict: false` and gradually enable strict mode
+2. Use `unknown` instead of `any` when you're unsure about types
+3. Learn utility types like `Partial`, `Pick`, and `Omit`
+4. Don't fight the compiler—if it's complaining, there's usually a good reason
 
 ## Conclusion
 
-Code-first content modeling represents the natural evolution of content management for development teams. By bringing content modeling into the developer workflow, Scalar enables more robust, type-safe, and maintainable content structures that can evolve alongside your application.
+TypeScript has fundamentally changed how I approach software development. It's not just about preventing bugs—it's about building software with confidence. If you're still on the fence, I encourage you to give it a try on your next project. Your future self will thank you.

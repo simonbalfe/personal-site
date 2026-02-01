@@ -2,31 +2,11 @@
 
 import * as React from 'react';
 
-import {
-  Box,
-  ChevronDown,
-  Code2,
-  Database,
-  GitBranch,
-  Pencil,
-  Terminal,
-  Users,
-} from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FaGithub } from 'react-icons/fa6';
 
-import { ThemeToggle } from '@/components/elements/theme-toggle';
 import Logo from '@/components/layout/logo';
 import { Button } from '@/components/ui/button';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from '@/components/ui/navigation-menu';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 
@@ -46,75 +26,8 @@ type NavItem = {
 };
 
 const navigationItems: NavItem[] = [
-  {
-    title: 'Product',
-    subitems: [
-      {
-        title: 'CMS',
-        items: [
-          {
-            title: 'Visual Content Editor',
-            href: '/product',
-            description: 'Rich text, media, and structured field editing',
-            icon: Pencil,
-            isHighlighted: true,
-          },
-          {
-            title: 'Real-time Collaboration',
-            href: '/product',
-            description: 'Commenting, presence, autosave, versioning',
-            icon: Users,
-          },
-        ],
-      },
-      {
-        title: 'Developer Tools',
-        items: [
-          {
-            title: 'GraphQL & REST APIs',
-            href: '/product',
-            description: 'Auto-generated, blazing fast, type-safe APIs',
-            icon: Database,
-          },
-          {
-            title: 'Local Development',
-            href: '/product',
-            description: 'Run Scalar locally with npx scalar dev',
-            icon: Terminal,
-          },
-          {
-            title: 'Code-first Models',
-            href: '/product',
-            description: 'Define models in code, sync to the UI',
-            icon: Code2,
-          },
-        ],
-      },
-      {
-        title: 'Integrations',
-        items: [
-          {
-            title: 'Next.js, Astro, etc.',
-            href: '/product',
-            description: 'Plug into your favorite frameworks instantly',
-            icon: Box,
-          },
-          {
-            title: 'GitHub Sync',
-            href: '/product',
-            description: 'Backup and version content model files',
-            icon: GitBranch,
-          },
-        ],
-      },
-    ],
-  },
-  { title: 'About', href: '/about' },
-  { title: 'Roadmap', href: '/roadmap' },
-  { title: 'FAQs', href: '/faq' },
-  { title: 'Blog', href: '/blog' },
-  { title: 'Docs', href: '/docs' },
-  { title: 'Contact', href: '/contact' },
+  { title: '/blog', href: '/blog' },
+  { title: '/contact', href: '#contact' },
 ];
 
 interface NavbarProps {
@@ -125,41 +38,6 @@ function Navbar({ currentPage }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const { isAtMost } = useMediaQuery();
   const isMobile = isAtMost('md');
-  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
-
-  const isMenuColorInverted = isMenuOpen && isMobile;
-
-  React.useEffect(() => {
-    // Get initial theme from localStorage, default to 'light' if none exists
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    setTheme(savedTheme || 'light');
-
-    // Listen for theme changes
-    const handleStorageChange = () => {
-      const newTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-      if (newTheme) {
-        setTheme(newTheme);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    // Listen for direct DOM class changes (for immediate updates)
-    const observer = new MutationObserver(() => {
-      const isDark = document.documentElement.classList.contains('dark');
-      setTheme(isDark ? 'dark' : 'light');
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      observer.disconnect();
-    };
-  }, []);
 
   React.useEffect(() => {
     if (isMenuOpen && isMobile) {
@@ -177,37 +55,13 @@ function Navbar({ currentPage }: NavbarProps) {
   }, [isMenuOpen, isMobile]);
 
   return (
-    <header
-      className={cn(
-        'border-b transition-all duration-300',
-        isMenuColorInverted
-          ? theme === 'dark'
-            ? 'light bg-foreground text-background [&_*]:border-border/30'
-            : 'dark bg-background text-foreground'
-          : '',
-      )}
-    >
-      <div className="container max-w-[120rem] px-4">
-        <div
-          className={cn(
-            'flex items-center border-x py-4 lg:border-none lg:py-6',
-          )}
-        >
-          <Logo
-            className={cn(
-              'ps-6 transition-all duration-300 lg:ps-0',
-              isMenuColorInverted
-                ? theme === 'dark'
-                  ? '[&>img]:invert-0'
-                  : '[&>img]:invert'
-                : 'dark:[&>img]:invert',
-            )}
-          />
+    <header className="border-b">
+      <div className="container">
+        <div className="flex items-center border-x px-6 py-4 lg:py-6">
+          <Logo />
 
           {/* Hamburger Menu Button (Mobile Only) */}
-          <div className="me-6 ml-auto flex flex-1 items-center justify-end lg:me-0 lg:hidden">
-            <ThemeToggle />
-
+          <div className="ml-auto flex flex-1 items-center justify-end lg:hidden">
             <Button
               variant="outline"
               size="icon"
@@ -241,20 +95,22 @@ function Navbar({ currentPage }: NavbarProps) {
             </Button>
           </div>
           {/* Desktop Navigation */}
-          <div className="ms-8 hidden flex-1 items-center justify-between lg:flex">
-            <NavigationMenu>
-              <NavigationMenuList className="gap-2">
-                {navigationItems.map((item) => (
-                  <DesktopNavItem
-                    key={item.title}
-                    item={item}
-                    currentPage={currentPage}
-                  />
-                ))}
-              </NavigationMenuList>
-            </NavigationMenu>
-
-            <NavBarAction />
+          <div className="hidden flex-1 items-center justify-end gap-6 lg:flex">
+            <a
+              href="/blog"
+              className={cn(
+                'text-base font-medium hover:text-muted-foreground transition-colors',
+                currentPage === '/blog' && 'text-secondary',
+              )}
+            >
+              /blog
+            </a>
+            <a
+              href="#contact"
+              className="text-base font-medium hover:text-muted-foreground transition-colors"
+            >
+              /contact
+            </a>
           </div>
 
           {/* Mobile Navigation */}
@@ -266,16 +122,9 @@ function Navbar({ currentPage }: NavbarProps) {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{
                   duration: 0.4,
-                  ease: [0.25, 0.46, 0.45, 0.94], // Custom cubic-bezier for smooth feel
+                  ease: [0.25, 0.46, 0.45, 0.94],
                 }}
-                className={cn(
-                  'fixed inset-0 top-16 z-50 container flex flex-col overflow-hidden text-sm font-medium lg:hidden',
-                  isMenuColorInverted
-                    ? theme === 'dark'
-                      ? 'light bg-foreground text-background'
-                      : 'dark bg-background text-foreground'
-                    : '',
-                )}
+                className="fixed inset-0 top-16 z-50 container flex flex-col overflow-hidden bg-background text-foreground text-sm font-medium lg:hidden"
               >
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -331,37 +180,17 @@ const NavBarAction = ({
   setIsMenuOpen?: (isMenuOpen: boolean) => void;
 }) => {
   return (
-    <div className="bordered-div-padding flex items-center justify-between border lg:border-none lg:!p-0">
-      <a href="#" className="flex items-center">
-        <Button
-          variant="ghost"
-          className="gap-2 font-medium lg:text-base"
-          size="sm"
-        >
-          <FaGithub className="size-5" />
-          <span className="">14.3k</span>
-        </Button>
-      </a>
-
-      <div className="flex flex-1 items-center gap-2">
-        <div className="flex flex-1 items-center justify-center">
-          <ThemeToggle className="hidden lg:block" />
-          <a href="/login" onClick={() => setIsMenuOpen?.(false)}>
-            <Button size="sm" variant="ghost" className="lg:text-base">
-              Log In
-            </Button>
-          </a>
-        </div>
+    <div className="bordered-div-padding flex items-center gap-6 border">
+      {navigationItems.map((item) => (
         <a
-          href="/signup"
-          className="ms-3"
+          key={item.title}
+          href={item.href}
+          className="text-base font-medium"
           onClick={() => setIsMenuOpen?.(false)}
         >
-          <Button size="sm" variant="default" className="">
-            Start Free Trial
-          </Button>
+          {item.title}
         </a>
-      </div>
+      ))}
     </div>
   );
 };

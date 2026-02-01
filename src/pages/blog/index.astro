@@ -6,11 +6,15 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '@/consts';
 import DefaultLayout from '@/layouts/DefaultLayout.astro';
 import { transformBlogPost } from '@/lib/blog';
 
-const posts = (await getCollection('blog'))
+const allPosts = await getCollection('blog');
+const posts = allPosts
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .map(transformBlogPost);
+
+// Get all unique tags from posts
+const allTags = [...new Set(allPosts.flatMap(post => post.data.tags || []))].sort();
 ---
 
 <DefaultLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-  <BlogPosts blogPosts={posts} client:load />
+  <BlogPosts blogPosts={posts} allTags={allTags} client:load />
 </DefaultLayout>

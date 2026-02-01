@@ -12,41 +12,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { BlogPostData } from '@/lib/blog';
 import { cn } from '@/lib/utils';
 
-type Category = 'All Posts' | 'Community' | 'Product' | 'Guides' | 'Changelog';
-
-const categories: Category[] = [
-  'All Posts',
-  'Community',
-  'Product',
-  'Guides',
-  'Changelog',
-];
-
 const POSTS_PER_PAGE = 8;
+
+function getTagSlug(tag: string): string {
+  return tag.toLowerCase().replace(/\s+/g, '-');
+}
 
 export default function BlogPosts({
   blogPosts,
+  allTags = [],
+  activeTag,
 }: {
   blogPosts: BlogPostData[];
+  allTags?: string[];
+  activeTag?: string;
 }) {
-  const [activeCategory, setActiveCategory] = useState<Category>('All Posts');
   const [visiblePosts, setVisiblePosts] = useState(POSTS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filter posts by category
-  const filteredPosts =
-    activeCategory === 'All Posts'
-      ? blogPosts
-      : blogPosts.filter((post) => {
-          const category = post.tags?.find((tag: string) =>
-            categories.includes(tag as Category),
-          );
-          return category === activeCategory;
-        });
+  // Posts are already filtered on the server when activeTag is set
+  const filteredPosts = blogPosts;
 
   // Get currently visible posts
   const visiblePostsList = filteredPosts.slice(0, visiblePosts);
@@ -67,12 +55,6 @@ export default function BlogPosts({
     }, 200);
   };
 
-  // Reset visible posts when changing category
-  const handleCategoryChange = (category: Category) => {
-    setActiveCategory(category);
-    setVisiblePosts(POSTS_PER_PAGE);
-  };
-
   return (
     <section className="container">
       <div className="border-x border-b">
@@ -80,20 +62,27 @@ export default function BlogPosts({
 
         <div className="bordered-div-padding border-b">
           <h1 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-5xl">
-            Blog
+            {activeTag ? `/${getTagSlug(activeTag)}` : 'Blog'}
           </h1>
           <div className="mt-6 block md:hidden">
             <Select
-              value={activeCategory}
-              onValueChange={(value) => handleCategoryChange(value as Category)}
+              value={activeTag || 'all'}
+              onValueChange={(value) => {
+                if (value === 'all') {
+                  window.location.href = '/blog';
+                } else {
+                  window.location.href = `/blog/tag/${getTagSlug(value)}`;
+                }
+              }}
             >
               <SelectTrigger className="w-full">
-                <SelectValue>{activeCategory}</SelectValue>
+                <SelectValue>{activeTag || 'All Posts'}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                <SelectItem value="all">All Posts</SelectItem>
+                {allTags.map((tag) => (
+                  <SelectItem key={tag} value={tag}>
+                    {tag}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -102,18 +91,33 @@ export default function BlogPosts({
         </div>
 
         <div className="bordered-div-padding hidden border-b md:block">
-          <Tabs
-            value={activeCategory}
-            onValueChange={(value) => handleCategoryChange(value as Category)}
-          >
-            <TabsList className="flex gap-3">
-              {categories.map((category) => (
-                <TabsTrigger key={category} value={category}>
-                  {category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="/blog"
+              className={cn(
+                'rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                !activeTag
+                  ? 'bg-foreground text-background'
+                  : 'hover:bg-muted'
+              )}
+            >
+              All Posts
+            </a>
+            {allTags.map((tag) => (
+              <a
+                key={tag}
+                href={`/blog/tag/${getTagSlug(tag)}`}
+                className={cn(
+                  'rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                  activeTag === tag
+                    ? 'bg-foreground text-background'
+                    : 'hover:bg-muted'
+                )}
+              >
+                /{getTagSlug(tag)}
+              </a>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
@@ -196,39 +200,47 @@ function BlogPostItem({
   post: BlogPostData;
   className?: string;
 }) {
-  // Extract category from tags
-  const category =
-    (post.tags?.find((tag: string) =>
-      categories.includes(tag as Category),
-    ) as Category) || 'Product';
-
   // Format date: Apr 11, 2025
   const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
+
   return (
-    <a
-      href={`/blog/${post.slug}`}
+    <div
       className={cn(
-        'bordered-div-padding hover:bg-muted/30 dark:hover:bg-muted block border-b',
+        'bordered-div-padding border-b',
         className,
       )}
     >
       <div className="">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-secondary text-sm font-medium md:text-base">
-            {category}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            {post.tags?.map((tag) => (
+              <a
+                key={tag}
+                href={`/blog/tag/${getTagSlug(tag)}`}
+                className="text-secondary hover:text-secondary/80 text-sm font-medium transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                /{getTagSlug(tag)}
+              </a>
+            ))}
+          </div>
           <span className="text-muted-foreground text-sm">{formattedDate}</span>
         </div>
-        <h2 className="font-weight-display mt-4 text-base leading-snug tracking-tighter md:text-xl">
-          {post.title}
-        </h2>
-        <p className="text-muted-foreground mt-6 text-sm leading-relaxed md:text-base">
-          {post.description}
-        </p>
+        <a
+          href={`/blog/${post.slug}`}
+          className="block hover:opacity-80 transition-opacity"
+        >
+          <h2 className="font-weight-display mt-4 text-base leading-snug tracking-tighter md:text-xl">
+            {post.title}
+          </h2>
+          <p className="text-muted-foreground mt-6 text-sm leading-relaxed md:text-base">
+            {post.description}
+          </p>
+        </a>
       </div>
 
       <div className="mt-6 flex items-center justify-between md:mt-8 lg:mt-10">
@@ -257,6 +269,6 @@ function BlogPostItem({
           </div>
         )}
       </div>
-    </a>
+    </div>
   );
 }

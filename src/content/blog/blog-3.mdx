@@ -1,135 +1,139 @@
 ---
-title: 'Scaling content teams without slowing down'
-description: 'Role-based permissions, draft workflows, and live preview - how Scalar empowers content editors to move fast without breaking things.'
+title: 'The Art of Code Review: Beyond Finding Bugs'
+description: 'How to give meaningful code reviews that improve code quality, share knowledge, and make your team better developers.'
 date: '2025-04-05'
 authors:
   [
     {
-      name: 'Yassine Zaanouni',
+      name: 'simon balfe',
       image: '/images/blog/authors/yassine-zaanouni.webp',
     },
   ]
-tags: ['Product']
+tags: ['Best Practices', 'Team']
 coverImage: '/images/blog/blog-3.webp'
 ---
 
-## Scaling content teams without slowing down
+## The Art of Code Review: Beyond Finding Bugs
 
-Role-based permissions, draft workflows, and live preview - how Scalar empowers content editors to move fast without breaking things.
+How to give meaningful code reviews that improve code quality, share knowledge, and make your team better developers.
 
-## The Growing Pains of Content Teams
+## Why Code Reviews Matter
 
-As organizations grow, content operations face increasing challenges:
+Code reviews are often seen as a necessary evil—a gate to pass before merging. But when done right, they're one of the most valuable practices for building high-quality software and growing as developers.
 
-- More content creators and editors working simultaneously
-- Complex approval workflows across departments
-- Higher quality standards and brand consistency requirements
-- Faster publishing cycles with less room for error
-- Integration with multiple distribution channels
+A good code review:
 
-Traditional content management systems often become bottlenecks during this scaling phase. Scalar is designed specifically to solve these challenges.
+- Catches bugs before they reach production
+- Shares knowledge across the team
+- Maintains code quality and consistency
+- Mentors junior developers
+- Creates collective code ownership
 
-## Role-Based Permissions: The Right Access for Everyone
+## What to Look For
 
-### Granular Permission Control
+### 1. Logic and Correctness
 
-Scalar's role-based permission system allows you to define exactly what each team member can do:
+The obvious stuff—does the code do what it's supposed to do?
 
-- **Viewer** - Can see content but not edit
-- **Editor** - Can create and modify content, but not publish
-- **Publisher** - Can approve and publish content
-- **Admin** - Full control over content and settings
-- **Custom roles** - Define specialized roles for your workflow
+- Are edge cases handled?
+- Are error conditions properly managed?
+- Does the logic make sense?
 
-### Content-Type Specific Permissions
+### 2. Design and Architecture
 
-Permissions can be assigned at the content-type level, so you can:
+Zoom out and consider the bigger picture:
 
-- Restrict blog editing to the content team
-- Allow product teams to manage product descriptions
-- Give legal teams review access for compliance-sensitive content
-- Enable marketing to manage promotional materials
+- Does this fit well with the existing codebase?
+- Is it solving the right problem?
+- Will this be maintainable in six months?
 
-## Draft Workflows: Safe Content Evolution
+### 3. Readability
 
-### Multi-Stage Approval Process
+Code is read far more often than it's written:
 
-Scalar's draft workflows enable clear content progression:
+- Are variable names descriptive?
+- Is the code self-documenting?
+- Would a new team member understand this?
 
-1. **Draft** - Initial content creation
-2. **In Review** - Ready for editorial feedback
-3. **Approved** - Validated but not yet published
-4. **Published** - Live content
-5. **Archived** - Previously published content
+### 4. Testing
 
-### Parallel Workstreams
+Tests are first-class citizens:
 
-With draft workflows, your team can:
+- Are there tests for the new functionality?
+- Do the tests cover edge cases?
+- Are the tests readable and maintainable?
 
-- Work on future content while current content is live
-- Prepare seasonal campaigns in advance
-- A/B test different content variations
-- Maintain evergreen content alongside timely updates
+## How to Give Feedback
 
-## Live Preview: What You See Is What You Get
+### Be Kind, Be Clear
 
-### Real-Time Visualization
+Remember there's a human on the other end. Frame feedback constructively:
 
-Content creators can see exactly how their content will appear:
+**Instead of:** "This is wrong."
+**Try:** "I think this might cause issues when X happens. What do you think about handling it like Y?"
 
-- Preview across multiple device sizes
-- See how content renders in different contexts
-- Visualize content with actual design and layout
+### Explain the Why
 
-### Contextual Editing
+Don't just say what should change—explain why:
 
-Live preview provides important context for content decisions:
+```
+// Instead of:
+"Use a Set here"
 
-- Understand character and word limits visually
-- See how images and text interact
-- Identify layout issues before publishing
-- Test interactive elements
+// Try:
+"A Set would be more efficient here since you're checking 
+for membership frequently, and it gives O(1) lookup vs O(n) for arrays"
+```
 
-## Version Control: A Safety Net for Your Content
+### Ask Questions
 
-### Comprehensive History
+When you're unsure, ask rather than assume:
 
-Every content change is tracked with:
+- "I'm curious why you chose this approach?"
+- "Have you considered X as an alternative?"
+- "What happens if the user does Y?"
 
-- Who made the change
-- When it was made
-- What specifically was changed
-- Comments explaining the change
+### Distinguish Must-Fix from Nice-to-Have
 
-### Easy Rollback
+Use prefixes to clarify importance:
 
-If issues arise, content can be quickly restored:
+- **Blocker:** Must be fixed before merge
+- **Suggestion:** Could be better, but not critical
+- **Nit:** Minor style preference
+- **Question:** Seeking understanding
 
-- Compare any two versions
-- Restore previous versions with one click
-- Selectively roll back specific fields
-- Track changes across publishing stages
+## Common Pitfalls to Avoid
 
-## Collaborative Tools: Working Together Seamlessly
+### Don't Be a Blocker
 
-### Commenting and Feedback
+If something is genuinely blocking, say so. Otherwise, approve with suggestions and trust the author to address them.
 
-Team members can:
+### Don't Bikeshed
 
-- Leave feedback on specific content elements
-- Request changes with clear context
-- Mention colleagues to bring them into discussions
-- Resolve comments when addressed
+Don't spend 20 comments debating variable names while missing a security vulnerability. Focus on what matters.
 
-### Notifications and Alerts
+### Don't Make It Personal
 
-Keep everyone in the loop with:
+Review the code, not the person. "This function is confusing" is better than "You wrote confusing code."
 
-- Publishing reminders and deadlines
-- Approval requests
-- Mention notifications
-- Content status changes
+## For the Reviewee
+
+Receiving feedback is a skill too:
+
+- **Don't take it personally** - The goal is better code
+- **Respond to all comments** - Even if just to acknowledge
+- **Ask for clarification** - If feedback is unclear
+- **Push back when appropriate** - If you disagree, explain why
+
+## Building a Review Culture
+
+Great code review culture comes from:
+
+- **Leading by example** - Senior devs setting the tone
+- **Celebrating good reviews** - Recognize thoughtful feedback
+- **Keeping reviews small** - 200-400 lines is ideal
+- **Responding quickly** - Don't let PRs sit for days
 
 ## Conclusion
 
-As content teams scale, their tools must evolve to support more complex workflows without adding friction. Scalar's approach to permissions, drafts, previews, and collaboration creates an environment where content teams can scale efficiently - publishing more content, with more contributors, without sacrificing quality or speed.
+Code reviews are an investment in your team's future. Every review is an opportunity to share knowledge, prevent bugs, and make each other better developers. Approach them with curiosity and kindness, and they'll become one of the most valuable parts of your development process.
