@@ -1,5 +1,3 @@
-import { docsLoader } from '@astrojs/starlight/loaders';
-import { docsSchema } from '@astrojs/starlight/schema';
 import { glob } from 'astro/loaders';
 import { defineCollection, z } from 'astro:content';
 
@@ -32,8 +30,5 @@ const blog = defineCollection({
     coverImage: z.string().optional(),
   }),
 });
-const docs = defineCollection({
-  loader: docsLoader(),
-  schema: docsSchema(),
-});
-export const collections = { blog, docs };
+
+export const collections = { blog };
