@@ -55,7 +55,7 @@ function Navbar({ currentPage }: NavbarProps) {
   }, [isMenuOpen, isMobile]);
 
   return (
-    <header className="border-b">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background">
       <div className="container">
         <div className="flex items-center border-x px-6 py-4 lg:py-6">
           <Logo />

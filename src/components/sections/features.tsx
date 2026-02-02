@@ -1,38 +1,44 @@
-import { Bot, Cloud, Container, Layers, Rocket } from 'lucide-react';
+import {
+  SiReact,
+  SiOpenai,
+  SiCloudflare,
+  SiDocker,
+  SiApachekafka,
+} from '@icons-pack/react-simple-icons';
 
 import { PlusSigns } from '@/components/icons/plus-signs';
-import { cn } from '@/lib/utils';
+
 const features = [
   {
-    icon: Rocket,
+    icon: SiReact,
     title: 'MVP Development',
     description: 'Your idea, launched.',
     subDescription:
       'I turn your concept into a working product fast. You get a polished MVP to test with real users, validate your market, and start generating traction.',
   },
   {
-    icon: Bot,
+    icon: SiOpenai,
     title: 'Agentic LLM Workflows',
     description: 'AI that works for you.',
     subDescription:
       'I build custom AI agents that automate your repetitive tasks, process documents, and make decisions. Save hours of manual work every week.',
   },
   {
-    icon: Cloud,
+    icon: SiCloudflare,
     title: 'Cloud',
     description: 'Infrastructure that scales.',
     subDescription:
       'I set up and manage your cloud infrastructure so it grows with your business. No surprise bills, no downtime—just reliable systems that handle your traffic.',
   },
   {
-    icon: Container,
+    icon: SiDocker,
     title: 'DevOps',
     description: 'Deploy with confidence.',
     subDescription:
       'I automate your deployments so you can ship updates in minutes, not days. Your team pushes code, it goes live safely—every time.',
   },
   {
-    icon: Layers,
+    icon: SiApachekafka,
     title: 'System Design',
     description: 'Architecture that lasts.',
     subDescription:
@@ -60,8 +66,8 @@ export function Features() {
               <PlusSigns className="absolute inset-0 -mt-0.25 hidden !h-[calc(100%+2px)] -translate-x-full border-y md:block" />
             )}
             <div className="flex items-center gap-2 md:w-1/3 shrink-0">
-              <feature.icon className="size-5 text-muted-foreground" />
-              <h2 className="text-muted-foreground text-sm md:text-base font-medium">
+              <feature.icon className="size-6" color="default" />
+              <h2 className="text-foreground text-base md:text-lg font-semibold">
                 {feature.title}
               </h2>
             </div>

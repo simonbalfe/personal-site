@@ -8,45 +8,38 @@ export function RecentPosts({ posts }: RecentPostsProps) {
   return (
     <section className="container">
       {/* Section Heading */}
-      <div className="bordered-div-padding border border-t-0">
+      <a href="/blog" className="bordered-div-padding border border-t-0 block transition-colors hover:bg-muted">
         <h2 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-4xl">
           Blog
         </h2>
-      </div>
+      </a>
 
       {/* Posts List */}
-      <div className="border border-t-0">
-        {posts.slice(0, 5).map((post, index) => (
+      <div className="divide-y border border-t-0">
+        {posts.slice(0, 5).map((post) => (
           <a
             key={post.id}
             href={`/blog/${post.slug}`}
-            className={`px-6 py-3 md:px-8 md:py-4 lg:px-10 flex flex-col gap-1 transition-colors hover:bg-muted sm:flex-row sm:items-baseline sm:gap-8 ${
-              index < Math.min(posts.length, 5) - 1 ? 'border-b' : ''
-            }`}
+            className="px-6 py-4 md:px-8 md:py-5 lg:px-10 flex flex-col gap-2 md:flex-row md:items-start md:justify-between transition-colors hover:bg-muted"
           >
-            <time className="text-muted-foreground w-36 shrink-0 text-sm">
-              {post.date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </time>
-            <h3 className="font-semibold tracking-tight text-base md:text-lg">
-              {post.title}
-            </h3>
+            <div className="md:w-1/3">
+              <time className="text-muted-foreground text-sm md:text-base">
+                {post.date.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </time>
+            </div>
+            <div className="md:w-2/3">
+              <h3 className="font-weight-display text-lg md:text-xl">
+                {post.title}
+              </h3>
+            </div>
           </a>
         ))}
       </div>
 
-      {/* View All Link */}
-      <div className="bordered-div-padding border border-t-0">
-        <a
-          href="/blog"
-          className="text-base md:text-lg font-medium hover:text-muted-foreground transition-colors"
-        >
-          View all posts →
-        </a>
-      </div>
     </section>
   );
 }

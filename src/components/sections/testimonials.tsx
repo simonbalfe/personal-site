@@ -44,7 +44,7 @@ export function Testimonials() {
             </div>
             <div className="space-y-1 md:w-2/3">
               <h3 className="font-weight-display text-lg md:text-xl">{job.role}</h3>
-              <p className="text-secondary font-medium text-base md:text-lg">{job.company}</p>
+              <p className="text-muted-foreground font-medium text-sm md:text-base">{job.company}</p>
               <p className="text-muted-foreground text-sm md:text-base">{job.description}</p>
             </div>
           </div>
