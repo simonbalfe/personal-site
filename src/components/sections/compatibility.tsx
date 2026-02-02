@@ -1,11 +1,47 @@
-import { ChevronDown } from 'lucide-react';
+import {
+  SiTypescript,
+  SiJavascript,
+  SiPython,
+  SiCplusplus,
+  SiSwift,
+  SiReact,
+  SiNextdotjs,
+  SiAstro,
+  SiTailwindcss,
+  SiNodedotjs,
+  SiExpress,
+  SiPostgresql,
+  SiCloudflare,
+  SiDocker,
+  SiLinux,
+  SiApple,
+  SiGit,
+  SiGithub,
+  SiVercel,
+  SiFigma,
+} from '@icons-pack/react-simple-icons';
 
 const techStack = [
-  { category: 'Languages', items: ['TypeScript', 'Python', 'C++', 'Swift'] },
-  { category: 'Frontend', items: ['React', 'Next.js', 'TailwindCSS'] },
-  { category: 'Backend', items: ['Node.js', 'Express', 'PostgreSQL'] },
-  { category: 'Cloud & DevOps', items: ['AWS', 'Docker', 'Linux'] },
-  { category: 'Platforms', items: ['macOS', 'Linux', 'iOS'] },
+  { icon: SiTypescript, label: 'TypeScript' },
+  { icon: SiJavascript, label: 'JavaScript' },
+  { icon: SiPython, label: 'Python' },
+  { icon: SiCplusplus, label: 'C++' },
+  { icon: SiSwift, label: 'Swift' },
+  { icon: SiReact, label: 'React' },
+  { icon: SiNextdotjs, label: 'Next.js' },
+  { icon: SiAstro, label: 'Astro' },
+  { icon: SiTailwindcss, label: 'Tailwind' },
+  { icon: SiNodedotjs, label: 'Node.js' },
+  { icon: SiExpress, label: 'Express' },
+  { icon: SiPostgresql, label: 'PostgreSQL' },
+  { icon: SiCloudflare, label: 'Cloudflare' },
+  { icon: SiDocker, label: 'Docker' },
+  { icon: SiLinux, label: 'Linux' },
+  { icon: SiApple, label: 'macOS' },
+  { icon: SiGit, label: 'Git' },
+  { icon: SiGithub, label: 'GitHub' },
+  { icon: SiVercel, label: 'Vercel' },
+  { icon: SiFigma, label: 'Figma' },
 ];
 
 export function Compatibility() {
@@ -17,25 +53,18 @@ export function Compatibility() {
           Tech Stack
         </h2>
       </div>
-      
-      <div className="border border-t-0 divide-y">
-        {techStack.map((group) => (
-          <details key={group.category} className="group">
-            <summary className="px-6 py-3 md:px-8 md:py-4 lg:px-10 flex items-center justify-between cursor-pointer list-none hover:bg-muted transition-colors">
-              <span className="text-muted-foreground text-sm md:text-base font-medium uppercase tracking-wide">
-                {group.category}
+
+      <div className="bordered-div-padding border border-t-0">
+        <div className="grid grid-cols-4 gap-6 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+          {techStack.map((tech) => (
+            <div key={tech.label} className="flex flex-col items-center gap-2">
+              <tech.icon className="size-10 md:size-12" color="default" />
+              <span className="text-muted-foreground text-xs text-center">
+                {tech.label}
               </span>
-              <ChevronDown className="size-5 text-muted-foreground transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="px-6 pb-4 md:px-8 md:pb-5 lg:px-10 flex flex-wrap gap-x-6 gap-y-1">
-              {group.items.map((item) => (
-                <span key={item} className="text-foreground text-base md:text-lg font-medium">
-                  {item}
-                </span>
-              ))}
             </div>
-          </details>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
