@@ -26,7 +26,7 @@ export function Hero() {
               <a href="/blog">Read the Blog</a>
             </Button>
             <Button asChild variant="outline">
-              <a href="https://github.com/simobalfe" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/simonbalfe" target="_blank" rel="noopener noreferrer">
                 <FaGithub className="size-5" />
                 GitHub
               </a>

@@ -12,36 +12,31 @@ const features = [
   {
     icon: SiReact,
     title: 'MVP Development',
-    description: 'Your idea, launched.',
-    subDescription:
+    description:
       'I turn your concept into a working product fast. You get a polished MVP to test with real users, validate your market, and start generating traction.',
   },
   {
     icon: SiOpenai,
     title: 'Agentic LLM Workflows',
-    description: 'AI that works for you.',
-    subDescription:
+    description:
       'I build custom AI agents that automate your repetitive tasks, process documents, and make decisions. Save hours of manual work every week.',
   },
   {
     icon: SiCloudflare,
     title: 'Cloud',
-    description: 'Infrastructure that scales.',
-    subDescription:
+    description:
       'I set up and manage your cloud infrastructure so it grows with your business. No surprise bills, no downtime—just reliable systems that handle your traffic.',
   },
   {
     icon: SiDocker,
     title: 'DevOps',
-    description: 'Deploy with confidence.',
-    subDescription:
+    description:
       'I automate your deployments so you can ship updates in minutes, not days. Your team pushes code, it goes live safely—every time.',
   },
   {
     icon: SiApachekafka,
     title: 'System Design',
-    description: 'Architecture that lasts.',
-    subDescription:
+    description:
       'I design systems that won\'t fall over as you grow. You get a clear technical roadmap and an architecture that handles 10x your current load.',
   },
 ];
@@ -55,30 +50,25 @@ export function Features() {
           What I Do
         </h2>
       </div>
-      
+
       <div className="border border-t-0 divide-y">
         {features.map((feature, index) => (
           <div
             key={index}
-            className="px-6 py-4 md:px-8 md:py-5 lg:px-10 relative flex flex-col gap-2 md:flex-row md:items-start md:gap-8"
+            className="px-6 py-5 md:px-8 md:py-6 lg:px-10 relative flex flex-col"
           >
             {index === 0 && (
               <PlusSigns className="absolute inset-0 -mt-0.25 hidden !h-[calc(100%+2px)] -translate-x-full border-y md:block" />
             )}
-            <div className="flex items-center gap-2 md:w-1/3 shrink-0">
+            <div className="flex items-center gap-2.5">
               <feature.icon className="size-6" color="default" />
-              <h2 className="text-foreground text-base md:text-lg font-semibold">
+              <h3 className="text-foreground font-weight-display text-xl md:text-2xl">
                 {feature.title}
-              </h2>
-            </div>
-            <div className="md:w-2/3">
-              <h3 className="text-foreground font-weight-display text-lg md:text-xl mb-1">
-                {feature.description}
               </h3>
-              <p className="text-muted-foreground text-sm md:text-base">
-                {feature.subDescription}
-              </p>
             </div>
+            <p className="text-muted-foreground text-base md:text-lg leading-relaxed mt-2 max-w-prose">
+              {feature.description}
+            </p>
           </div>
         ))}
       </div>
