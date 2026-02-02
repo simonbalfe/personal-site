@@ -14,29 +14,26 @@ export function RecentPosts({ posts }: RecentPostsProps) {
         </h2>
       </div>
 
-      {/* Posts Grid */}
-      <div className="grid grid-cols-1 divide-y border border-t-0 md:grid-cols-3 md:divide-x md:divide-y-0">
-        {posts.slice(0, 3).map((post) => (
+      {/* Posts List */}
+      <div className="border border-t-0">
+        {posts.slice(0, 5).map((post, index) => (
           <a
             key={post.id}
             href={`/blog/${post.slug}`}
-            className="bordered-div-padding hover:bg-muted/30 transition-colors group"
+            className={`px-6 py-3 md:px-8 md:py-4 lg:px-10 flex flex-col gap-1 transition-colors hover:bg-muted sm:flex-row sm:items-baseline sm:gap-8 ${
+              index < Math.min(posts.length, 5) - 1 ? 'border-b' : ''
+            }`}
           >
-            <div className="space-y-3">
-              <p className="text-muted-foreground text-sm">
-                {post.date.toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </p>
-              <h3 className="font-weight-display text-lg md:text-xl group-hover:text-secondary transition-colors">
-                {post.title}
-              </h3>
-              <p className="text-muted-foreground text-base line-clamp-2">
-                {post.description}
-              </p>
-            </div>
+            <time className="text-muted-foreground w-36 shrink-0 text-sm">
+              {post.date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </time>
+            <h3 className="font-semibold tracking-tight text-base md:text-lg">
+              {post.title}
+            </h3>
           </a>
         ))}
       </div>

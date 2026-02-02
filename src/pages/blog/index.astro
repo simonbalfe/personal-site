@@ -2,19 +2,19 @@
 import { getCollection } from 'astro:content';
 
 import BlogPosts from '@/components/sections/blog-posts';
-import { SITE_TITLE, SITE_DESCRIPTION } from '@/consts';
+import { SITE_TITLE } from '@/consts';
 import DefaultLayout from '@/layouts/DefaultLayout.astro';
 import { transformBlogPost } from '@/lib/blog';
 
-const allPosts = await getCollection('blog');
-const posts = allPosts
+const posts = await getCollection('blog');
+
+const sortedPosts = posts
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .map(transformBlogPost);
 
-// Get all unique tags from posts
-const allTags = [...new Set(allPosts.flatMap(post => post.data.tags || []))].sort();
+const allTags = [...new Set(posts.flatMap((post) => post.data.tags || []))].sort();
 ---
 
-<DefaultLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-  <BlogPosts blogPosts={posts} allTags={allTags} client:load />
+<DefaultLayout title={`Blog - ${SITE_TITLE}`} description="Blog posts and articles">
+  <BlogPosts blogPosts={sortedPosts} allTags={allTags} />
 </DefaultLayout>

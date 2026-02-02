@@ -1,77 +1,94 @@
 ---
-title: 'Why TypeScript Changed How I Write Code'
-description: 'My journey from JavaScript to TypeScript and the lessons learned about type safety, developer experience, and building maintainable applications.'
+title: 'Why Go Changed How I Build Backend Services'
+description: 'My journey from Node.js to Go and the lessons learned about performance, concurrency, and building production-ready microservices.'
 date: '2025-04-11'
 authors:
   [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
-tags: ['TypeScript', 'Development']
+tags: ['Golang', 'Backend']
 coverImage: '/images/blog/blog-1.webp'
 ---
 
-## Why TypeScript Changed How I Write Code
+## Why Go Changed How I Build Backend Services
 
-My journey from JavaScript to TypeScript and the lessons learned about type safety, developer experience, and building maintainable applications.
+My journey from Node.js to Go and the lessons learned about performance, concurrency, and building production-ready microservices.
 
 ## Introduction
 
-When I first started writing JavaScript, I loved the freedom. No types to worry about, rapid prototyping, and the ability to just "make things work." But as my projects grew larger and more complex, I started to see the cracks. Runtime errors that could have been caught earlier, confusing code that was hard to refactor, and the constant fear of breaking something when making changes.
+When I first started building backend services with Node.js, I loved the familiarity. Same language as the frontend, npm ecosystem, and async/await patterns. But as our services scaled and traffic grew, I started seeing the cracks. High memory usage, unpredictable garbage collection pauses, and services that would mysteriously slow down under load.
 
 ## The Turning Point
 
-The turning point came when I was debugging a production issue at 2 AM. A simple typo in a property name had slipped through code review and testing. That's when I decided to give TypeScript a serious try.
+The breaking point came when our payment service started timing out during peak traffic. We'd scaled horizontally, added more resources, but the fundamental issues remained. That's when I decided to rewrite our critical services in Go.
 
-## What TypeScript Brings to the Table
+## What Go Brings to the Table
 
-TypeScript isn't just about adding types—it's about building confidence in your code:
+Go isn't just another language—it's designed for building scalable distributed systems:
 
-- **Catch errors before runtime** - The compiler becomes your first line of defense
-- **Better refactoring** - Rename a variable and see all the places it's used
-- **Self-documenting code** - Types serve as living documentation
-- **IDE superpowers** - Autocomplete that actually works
+- **Built-in concurrency** - Goroutines make concurrent programming natural
+- **Fast compilation** - Sub-second builds even for large codebases
+- **Low resource usage** - 10MB memory footprint vs 100MB+ for Node
+- **Static binary** - Single binary with no dependencies
+- **Production-ready stdlib** - HTTP servers, JSON, crypto all included
 
-## Real-World Examples
+## Real-World Performance
 
-Here's how I structure my data models now:
+Here's what we saw migrating our auth service from Node.js to Go:
 
-```typescript
-interface User {
-  id: string;
-  email: string;
-  profile: UserProfile;
-  createdAt: Date;
-}
+**Node.js version:**
+- Memory: 250MB average
+- Response time: 45ms p95
+- CPU: 40% under load
+- Deployment: 80MB Docker image
 
-interface UserProfile {
-  displayName: string;
-  avatar?: string;
-  bio?: string;
-}
+**Go version:**
+- Memory: 12MB average (20x improvement)
+- Response time: 8ms p95 (5.6x improvement)
+- CPU: 8% under load (5x improvement)
+- Deployment: 15MB Docker image (5x smaller)
 
-async function getUserById(id: string): Promise<User | null> {
-  const user = await db.users.findUnique({ where: { id } });
-  return user;
+## Concurrency Made Easy
+
+Go's goroutines changed how I think about concurrent operations:
+
+```go
+// Handle 10,000 concurrent requests with ease
+func processOrders(orders []Order) {
+    var wg sync.WaitGroup
+    
+    for _, order := range orders {
+        wg.Add(1)
+        go func(o Order) {
+            defer wg.Done()
+            processOrder(o)
+        }(order)
+    }
+    
+    wg.Wait()
 }
 ```
+
+This pattern that's complex in other languages is idiomatic in Go. Each goroutine only costs ~2KB of memory.
 
 ## The Learning Curve
 
 I won't pretend it was easy. There were moments of frustration:
 
-- Generic types felt like learning a new language
-- Some third-party libraries had poor type definitions
-- Configuring `tsconfig.json` took trial and error
+- Error handling felt verbose at first
+- No generics (though Go 1.18+ changed this)
+- Missing some conveniences from higher-level languages
 
-But the investment paid off. My code became more predictable, my team's code reviews became more productive, and I spent less time debugging runtime errors.
+But the investment paid off. Our services became more predictable, deployment became simpler (single binary!), and we handled 10x the traffic with the same infrastructure.
 
 ## Tips for Getting Started
 
 If you're considering making the switch:
 
-1. Start with `strict: false` and gradually enable strict mode
-2. Use `unknown` instead of `any` when you're unsure about types
-3. Learn utility types like `Partial`, `Pick`, and `Omit`
-4. Don't fight the compiler—if it's complaining, there's usually a good reason
+1. Start with the [Tour of Go](https://go.dev/tour/) - it's excellent
+2. Read [Effective Go](https://go.dev/doc/effective_go) - learn idiomatic patterns
+3. Don't fight the language - embrace Go's simplicity
+4. Use goroutines, but understand the sync primitives
+5. Leverage the standard library - it's comprehensive
 
 ## Conclusion
 
-TypeScript has fundamentally changed how I approach software development. It's not just about preventing bugs—it's about building software with confidence. If you're still on the fence, I encourage you to give it a try on your next project. Your future self will thank you.
+Go has fundamentally changed how I build backend services. It's not just about performance—it's about operational simplicity and confidence at scale. If you're building microservices, APIs, or any backend infrastructure, Go deserves serious consideration. Your infrastructure costs will thank you.

@@ -1,144 +1,261 @@
 ---
-title: 'Building Scalable APIs: Lessons from the Trenches'
-description: 'Practical insights on designing APIs that can grow with your application, from authentication patterns to rate limiting strategies.'
+title: 'Designing Microservices That Actually Scale'
+description: 'Practical patterns for building distributed systems on AWS, from service communication to deployment strategies that work in production.'
 date: '2025-04-08'
 authors:
   [{ name: 'simon balfe', image: '/images/blog/authors/fedir-davydov.webp' }]
-tags: ['Backend', 'Architecture']
+tags: ['Cloud', 'Architecture']
 coverImage: '/images/blog/blog-2.webp'
 ---
 
-## Building Scalable APIs: Lessons from the Trenches
+## Designing Microservices That Actually Scale
 
-Practical insights on designing APIs that can grow with your application, from authentication patterns to rate limiting strategies.
+Practical patterns for building distributed systems on AWS, from service communication to deployment strategies that work in production.
 
-## The Foundation Matters
+## The Monolith Breaking Point
 
-Building an API that works is easy. Building an API that scales, remains maintainable, and provides a great developer experience? That's the real challenge. After years of building and maintaining production APIs, here are the lessons I've learned.
+Our monolithic application was handling 1,000 requests per second when things started breaking. Not from lack of resources, but from tight coupling. A bug in the recommendation engine would take down checkout. Deploying a small fix required redeploying everything.
 
-## Design Principles
+We decided to break it into microservices. Here's what I learned building and running 20+ microservices in production.
 
-### 1. Consistency is King
+## Service Boundaries: The Foundation
 
-Every endpoint should follow predictable patterns:
+Getting service boundaries right is crucial. We learned this the hard way:
 
-- Use consistent naming conventions (kebab-case for URLs, camelCase for JSON)
-- Standardize response formats across all endpoints
-- Apply uniform error handling
+### Domain-Driven Design
 
-```typescript
-// Consistent response structure
-interface ApiResponse<T> {
-  data: T;
-  meta: {
-    timestamp: string;
-    requestId: string;
-  };
-}
+Each service owns a specific business capability:
 
-interface ApiError {
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, string[]>;
-  };
-}
-```
+- **User Service** - Authentication, profiles, preferences
+- **Order Service** - Cart, checkout, order management  
+- **Inventory Service** - Stock levels, warehouses
+- **Payment Service** - Transactions, refunds
 
-### 2. Version from Day One
+**Key principle:** If two services constantly need to talk to each other, they're probably one service.
 
-Even if you think you won't need it, version your API:
+### Database Per Service
+
+Each microservice has its own database. No shared databases.
 
 ```
-/api/v1/users
-/api/v2/users
+user-service    → PostgreSQL (user data)
+order-service   → PostgreSQL (transactions)
+inventory-service → MongoDB (stock levels)
+analytics-service → TimescaleDB (time-series)
 ```
 
-Future you will thank present you when you need to make breaking changes.
+This prevents tight coupling but introduces distributed data challenges. More on that later.
 
-## Authentication Patterns
+## Service Communication Patterns
 
-I've worked with various auth strategies. Here's what I've learned:
+### Synchronous: REST/gRPC
 
-### JWT for Stateless Auth
+For request-response patterns:
 
-```typescript
-interface JWTPayload {
-  userId: string;
-  email: string;
-  roles: string[];
-  exp: number;
-  iat: number;
+```go
+// gRPC service definition
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (Order);
+  rpc GetOrder(GetOrderRequest) returns (Order);
 }
 ```
 
-**Pros:** No database lookups, easy to scale horizontally
-**Cons:** Can't revoke tokens easily, token size grows with claims
+**Use gRPC when:**
+- Low latency is critical
+- Strong typing is valuable
+- Services are within your control
 
-### API Keys for Service-to-Service
+**Use REST when:**
+- External clients need access
+- Simplicity over performance
+- Wide language support needed
 
-Keep API keys simple for machine-to-machine communication, but implement proper scoping.
+### Asynchronous: Event-Driven
 
-## Rate Limiting Strategies
+For decoupled, scalable communication:
 
-Don't wait for your API to get hammered before implementing rate limiting:
-
-- **Token bucket** - Good for bursty traffic
-- **Sliding window** - More predictable limits
-- **Per-user limits** - Prevent single users from affecting others
-
-## Performance Optimizations
-
-### Database Query Optimization
-
-The N+1 query problem is real. Use eager loading or DataLoader patterns:
-
-```typescript
-// Bad: N+1 queries
-const users = await db.users.findMany();
-for (const user of users) {
-  user.posts = await db.posts.findMany({ where: { userId: user.id } });
+```go
+// Publish order created event
+event := OrderCreatedEvent{
+    OrderID: order.ID,
+    UserID: order.UserID,
+    Amount: order.Total,
 }
-
-// Good: Eager loading
-const users = await db.users.findMany({
-  include: { posts: true }
-});
+publisher.Publish("orders.created", event)
 ```
 
-### Caching Layers
+**Services that care:**
+- Inventory: Reserve stock
+- Email: Send confirmation
+- Analytics: Track conversion
+- Fraud: Check suspicious activity
 
-Implement caching at multiple levels:
+They all subscribe independently. If email is down, orders still process.
 
-1. **Application cache** - In-memory for hot data
-2. **Distributed cache** - Redis for shared state
-3. **CDN cache** - For public, static responses
+## Deployment on AWS
 
-## Error Handling
+### Container Orchestration with ECS
 
-Good error responses make debugging easier for everyone:
+We run our services on AWS ECS (Elastic Container Service):
 
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Request validation failed",
-    "details": {
-      "email": ["Invalid email format"],
-      "password": ["Must be at least 8 characters"]
+```yaml
+# Task definition (simplified)
+service: order-service
+image: ecr.io/order-service:v1.2.3
+cpu: 512
+memory: 1024
+desired_count: 3
+
+load_balancer:
+  target_group: order-service-tg
+  container_port: 8080
+
+auto_scaling:
+  min_capacity: 2
+  max_capacity: 20
+  cpu_threshold: 70
+```
+
+**Why ECS over EKS:**
+- Simpler for our team size (< 10 engineers)
+- Native AWS integration
+- Lower operational overhead
+- Still provides container orchestration
+
+### Service Discovery
+
+Services find each other via AWS Cloud Map:
+
+```go
+// Discover and call user service
+endpoint, _ := discovery.GetServiceEndpoint("user-service")
+resp, _ := http.Get(fmt.Sprintf("%s/users/%s", endpoint, userID))
+```
+
+No hardcoded URLs. Services can scale and move freely.
+
+### Load Balancing
+
+Application Load Balancer (ALB) routes traffic:
+
+```
+user.example.com/api/orders → order-service
+user.example.com/api/users  → user-service
+user.example.com/api/payment → payment-service
+```
+
+Health checks ensure traffic only goes to healthy instances.
+
+## Distributed Data Challenges
+
+### The Saga Pattern
+
+When operations span multiple services, use sagas instead of distributed transactions:
+
+```go
+// Order creation saga
+func CreateOrderSaga(order Order) error {
+    // 1. Reserve inventory
+    if err := inventoryClient.Reserve(order.Items); err != nil {
+        return err
     }
-  }
+    
+    // 2. Process payment
+    if err := paymentClient.Charge(order.Payment); err != nil {
+        // Compensate: unreserve inventory
+        inventoryClient.Unreserve(order.Items)
+        return err
+    }
+    
+    // 3. Create order
+    if err := orderDB.Create(order); err != nil {
+        // Compensate: refund and unreserve
+        paymentClient.Refund(order.Payment)
+        inventoryClient.Unreserve(order.Items)
+        return err
+    }
+    
+    return nil
 }
 ```
 
-## Monitoring and Observability
+### Event Sourcing for Critical Domains
 
-You can't improve what you can't measure:
+For order and payment services, we store events rather than current state:
 
-- **Request logging** - Track response times, status codes, and errors
-- **Distributed tracing** - Follow requests across services
-- **Alerting** - Get notified before users complain
+```go
+type OrderEvent struct {
+    OrderID   string
+    EventType string // "created", "paid", "shipped"
+    Timestamp time.Time
+    Data      json.RawMessage
+}
+```
+
+Benefits:
+- Complete audit trail
+- Can reconstruct state at any point in time
+- Natural fit for event-driven architecture
+
+## Observability at Scale
+
+### Distributed Tracing with X-Ray
+
+Every request gets a trace ID that follows it across services:
+
+```go
+// Propagate trace context
+ctx := xray.WithSegment(r.Context(), "order-service")
+resp := userService.GetUser(ctx, userID)
+```
+
+Now we can see the full request path:
+```
+API Gateway → Order Service → User Service → Database
+   120ms         45ms           30ms          25ms
+```
+
+### Centralized Logging
+
+All services log to CloudWatch:
+
+```go
+log.WithFields(log.Fields{
+    "trace_id": traceID,
+    "user_id": userID,
+    "service": "order-service",
+}).Info("Order created")
+```
+
+We can correlate logs across services using trace_id.
+
+### Metrics That Matter
+
+Key metrics for each service:
+
+- Request rate (requests/sec)
+- Error rate (errors/sec)
+- Latency (p50, p95, p99)
+- Resource utilization (CPU, memory)
+
+```go
+// Instrument endpoints
+orderCounter.Inc()
+orderLatency.Observe(duration.Seconds())
+```
+
+## Lessons Learned
+
+1. **Start with the monolith** - Don't go microservices until you have to
+2. **Conway's Law is real** - Service boundaries should match team boundaries
+3. **Network calls will fail** - Build resilience from day one
+4. **Observability isn't optional** - You can't debug what you can't see
+5. **Automate everything** - Manual operations don't scale
 
 ## Conclusion
 
-Building scalable APIs is as much about discipline and consistency as it is about technical choices. Start with good foundations, design for change, and always keep the developer experience in mind. Your future self—and your API consumers—will thank you.
+Microservices aren't a silver bullet. They solve scaling problems but introduce operational complexity. The key is knowing when the benefits outweigh the costs.
+
+For us, microservices enabled independent deployment, technology choices, and scaling. But they required investment in tooling, monitoring, and developer education.
+
+If you're considering microservices, start small. Extract one service, learn the patterns, and iterate. Your architecture should evolve with your needs.

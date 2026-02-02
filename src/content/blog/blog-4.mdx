@@ -1,0 +1,340 @@
+---
+title: 'Docker Multi-Stage Builds: Production-Ready Images'
+description: 'How to build optimized Docker images that are secure, fast, and small using multi-stage builds and best practices.'
+date: '2025-04-05'
+authors:
+  [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
+tags: ['DevOps', 'Docker']
+coverImage: '/images/blog/blog-4.webp'
+---
+
+## Docker Multi-Stage Builds: Production-Ready Images
+
+How to build optimized Docker images that are secure, fast, and small using multi-stage builds and best practices.
+
+## The Problem with Naive Dockerfiles
+
+When I first started containerizing applications, my Dockerfiles were simple but bloated:
+
+```dockerfile
+FROM golang:1.21
+WORKDIR /app
+COPY . .
+RUN go build -o main .
+CMD ["./main"]
+```
+
+This works, but the resulting image is **800MB** because it includes the entire Go SDK, build tools, and source code. For a binary that's only 15MB.
+
+## Enter Multi-Stage Builds
+
+Multi-stage builds solve this by separating build and runtime environments:
+
+```dockerfile
+# Build stage
+FROM golang:1.21 AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Runtime stage
+FROM alpine:3.19
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/main .
+CMD ["./main"]
+```
+
+**Result:** Image size drops from 800MB to **15MB**.
+
+That's a **53x reduction**. Faster deployments, lower bandwidth costs, smaller attack surface.
+
+## Real-World Example: Node.js API
+
+Here's how I structure a production Node.js Dockerfile:
+
+```dockerfile
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Stage 2: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Stage 3: Runtime
+FROM node:20-alpine
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy only necessary files
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --chown=nodejs:nodejs package.json ./
+
+USER nodejs
+EXPOSE 3000
+CMD ["node", "dist/index.js"]
+```
+
+## Key Optimizations Explained
+
+### 1. Use Specific Base Images
+
+```dockerfile
+# ❌ Bad: Latest tag is unpredictable
+FROM node:latest
+
+# ✅ Good: Pinned version + alpine for size
+FROM node:20.11-alpine3.19
+```
+
+### 2. Leverage Layer Caching
+
+Order matters. Put things that change less frequently first:
+
+```dockerfile
+# ✅ Good: Dependencies cached unless package.json changes
+COPY package*.json ./
+RUN npm ci
+COPY . .
+
+# ❌ Bad: Copies everything first, breaks cache on any file change
+COPY . .
+RUN npm ci
+```
+
+### 3. Run as Non-Root User
+
+Never run containers as root:
+
+```dockerfile
+# Create user
+RUN addgroup -g 1001 -S appuser && \
+    adduser -S appuser -u 1001
+
+# Switch to non-root user
+USER appuser
+```
+
+### 4. Only Copy What You Need
+
+```dockerfile
+# Create .dockerignore file
+node_modules
+.git
+.env
+*.md
+.DS_Store
+coverage/
+.vscode/
+```
+
+## Security Best Practices
+
+### Scan for Vulnerabilities
+
+```bash
+# Use Docker Scout or Trivy
+docker scout cves my-image:latest
+trivy image my-image:latest
+```
+
+### Use Distroless Images
+
+For Go applications, distroless images are even smaller and more secure:
+
+```dockerfile
+# Runtime stage with distroless
+FROM gcr.io/distroless/static-debian12
+COPY --from=builder /app/main /
+CMD ["/main"]
+```
+
+**Size:** 2MB base image vs 7MB Alpine
+
+**Security:** No shell, no package manager, minimal attack surface
+
+## Multi-Architecture Builds
+
+Build for both AMD64 and ARM64:
+
+```bash
+# Enable buildx
+docker buildx create --use
+
+# Build and push multi-arch image
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t myregistry/myapp:latest \
+  --push .
+```
+
+This works on both x86 servers and ARM-based instances (AWS Graviton).
+
+## CI/CD Integration
+
+Here's our GitHub Actions workflow for building and pushing images:
+
+```yaml
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/myapp:${{ github.sha }}
+            ${{ secrets.ECR_REGISTRY }}/myapp:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+```
+
+**Key features:**
+- Builds on every push to main
+- Tags with git SHA for traceability
+- Uses GitHub Actions cache for faster builds
+
+## Health Checks in Dockerfile
+
+Add health checks so Docker knows if your container is healthy:
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
+```
+
+## Docker Compose for Local Development
+
+Keep dev environment consistent:
+
+```yaml
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      target: builder  # Use build stage for hot reload
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+  
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+```
+
+## Common Mistakes to Avoid
+
+### 1. Installing Unnecessary Packages
+
+```dockerfile
+# ❌ Bad: Installing dev dependencies in production
+RUN npm install
+
+# ✅ Good: Only production dependencies
+RUN npm ci --only=production
+```
+
+### 2. Running apt-get update Without Clean
+
+```dockerfile
+# ❌ Bad: Leaves cache in layer
+RUN apt-get update && apt-get install -y curl
+
+# ✅ Good: Cleans cache in same layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+### 3. Not Using .dockerignore
+
+Without .dockerignore, COPY copies everything including node_modules, .git, etc. This breaks caching and bloats context.
+
+## Monitoring Image Size Over Time
+
+Track image sizes in CI:
+
+```bash
+#!/bin/bash
+# check-image-size.sh
+
+IMAGE=$1
+SIZE=$(docker images $IMAGE --format "{{.Size}}")
+echo "Image size: $SIZE"
+
+# Alert if size exceeds threshold
+if [[ "$SIZE" == *GB* ]]; then
+  echo "❌ Image too large!"
+  exit 1
+fi
+```
+
+## Real-World Impact
+
+After implementing these practices across our services:
+
+- Average image size: 800MB → 50MB (**16x reduction**)
+- Build time: 8 minutes → 2 minutes (**4x faster**)
+- Deployment time: 90 seconds → 15 seconds (**6x faster**)
+- ECR storage costs: $50/month → $8/month (**84% reduction**)
+
+## Conclusion
+
+Docker images should be:
+- **Small** - Faster deployments, lower costs
+- **Secure** - Minimal attack surface, non-root user
+- **Efficient** - Leverage layer caching
+- **Reproducible** - Pin versions, use multi-stage builds
+
+Multi-stage builds are the foundation. Start there, then add security hardening, multi-arch support, and monitoring. Your deployment pipeline will thank you.

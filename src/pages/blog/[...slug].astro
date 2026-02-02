@@ -2,26 +2,31 @@
 import { getCollection, render } from 'astro:content';
 import {
   ArrowLeft,
+  ArrowRight,
   ClockFading,
-  ExternalLink,
-  Info,
-  Terminal,
 } from 'lucide-react';
 
 import { Meteors } from '@/components/magicui/meteors';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { EXTERNAL_LINKS } from '@/constants/external-links';
 import DefaultLayout from '@/layouts/DefaultLayout.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  return posts.map((post) => ({
+  // Sort by date descending
+  const sortedPosts = posts.sort((a, b) => 
+    new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf()
+  );
+  
+  return sortedPosts.map((post, index) => ({
     params: { slug: post.id },
-    props: post,
+    props: {
+      post,
+      prevPost: index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null,
+      nextPost: index > 0 ? sortedPosts[index - 1] : null,
+    },
   }));
 }
 
-const post = Astro.props;
+const { post, prevPost, nextPost } = Astro.props;
 const { Content } = await render(post);
 
 // Calculate reading time
@@ -120,49 +125,38 @@ const authors = post.data.authors || [];
             <Content />
           </div>
 
-          <!-- Wrap-up section -->
-          <div class="border-border mt-14">
-            <h2
-              class="font-weight-display mb-6 flex items-center text-2xl tracking-tighter"
-            >
-              <Terminal className="text-muted-foreground mr-2 h-5 w-5" />
-              Wrap-up
-            </h2>
-            <p class="text-foreground mb-8 text-base leading-relaxed">
-              A CMS shouldn't slow you down. Scalar aims to expand into your
-              workflow — whether you're coding content models, collaborating on
-              product copy, or launching updates at 2am.
-            </p>
-
-            <p class="text-foreground mb-8 text-base leading-relaxed">
-              If that sounds like the kind of tooling you want to use —{' '}
+          <!-- Previous/Next Navigation -->
+          <nav class="mt-16 flex items-center justify-between border-t pt-8">
+            {prevPost ? (
               <a
-                href={EXTERNAL_LINKS.EMAIL}
-                class="text-secondary inline-flex items-center font-medium hover:underline"
+                href={`/blog/${prevPost.id}`}
+                class="group flex items-center gap-3 transition-colors hover:text-muted-foreground"
               >
-                try Scalar
-                <ExternalLink className="ml-1 h-3.5 w-3.5" />
-              </a>{' '}
-              or{' '}
-              <a
-                href={EXTERNAL_LINKS.DISCORD}
-                class="text-secondary inline-flex items-center font-medium hover:underline"
-              >
-                join us on Discord
-                <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                <div class="text-left">
+                  <div class="text-muted-foreground text-xs uppercase tracking-wide">Previous</div>
+                  <div class="font-medium">{prevPost.data.title}</div>
+                </div>
               </a>
-              .
-            </p>
-          </div>
-
-          <!-- Alert component -->
-          <Alert className="">
-            <Info className="!text-secondary h-4 w-4" />
-            <AlertDescription className="text-foreground text-sm">
-              Scalar is fully open source. You can self-host or use our cloud
-              platform — your workflow, your terms.
-            </AlertDescription>
-          </Alert>
+            ) : (
+              <div />
+            )}
+            
+            {nextPost ? (
+              <a
+                href={`/blog/${nextPost.id}`}
+                class="group flex items-center gap-3 text-right transition-colors hover:text-muted-foreground"
+              >
+                <div>
+                  <div class="text-muted-foreground text-xs uppercase tracking-wide">Next</div>
+                  <div class="font-medium">{nextPost.data.title}</div>
+                </div>
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </a>
+            ) : (
+              <div />
+            )}
+          </nav>
         </div>
       </article>
       <div class="relative hidden overflow-hidden border-t py-28 md:block">

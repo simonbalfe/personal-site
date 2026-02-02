@@ -1,10 +1,9 @@
-const techStackRow1 = [
+import { ChevronDown } from 'lucide-react';
+
+const techStack = [
   { category: 'Languages', items: ['TypeScript', 'Python', 'C++', 'Swift'] },
   { category: 'Frontend', items: ['React', 'Next.js', 'TailwindCSS'] },
   { category: 'Backend', items: ['Node.js', 'Express', 'PostgreSQL'] },
-];
-
-const techStackRow2 = [
   { category: 'Cloud & DevOps', items: ['AWS', 'Docker', 'Linux'] },
   { category: 'Platforms', items: ['macOS', 'Linux', 'iOS'] },
 ];
@@ -19,39 +18,23 @@ export function Compatibility() {
         </h2>
       </div>
       
-      {/* Row 1 - 3 columns */}
-      <div className="grid grid-cols-1 divide-y border border-t-0 md:grid-cols-3 md:divide-x md:divide-y-0">
-        {techStackRow1.map((group) => (
-          <div key={group.category} className="bordered-div-padding">
-            <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wide mb-4">
-              {group.category}
-            </h3>
-            <ul className="space-y-2">
+      <div className="border border-t-0 divide-y">
+        {techStack.map((group) => (
+          <details key={group.category} className="group">
+            <summary className="px-6 py-3 md:px-8 md:py-4 lg:px-10 flex items-center justify-between cursor-pointer list-none hover:bg-muted transition-colors">
+              <span className="text-muted-foreground text-sm md:text-base font-medium uppercase tracking-wide">
+                {group.category}
+              </span>
+              <ChevronDown className="size-5 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="px-6 pb-4 md:px-8 md:pb-5 lg:px-10 flex flex-wrap gap-x-6 gap-y-1">
               {group.items.map((item) => (
-                <li key={item} className="text-foreground text-lg md:text-xl font-medium">
+                <span key={item} className="text-foreground text-base md:text-lg font-medium">
                   {item}
-                </li>
+                </span>
               ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-
-      {/* Row 2 - 2 columns */}
-      <div className="grid grid-cols-1 divide-y border border-t-0 md:grid-cols-2 md:divide-x md:divide-y-0">
-        {techStackRow2.map((group) => (
-          <div key={group.category} className="bordered-div-padding">
-            <h3 className="text-muted-foreground text-sm font-medium uppercase tracking-wide mb-4">
-              {group.category}
-            </h3>
-            <ul className="space-y-2">
-              {group.items.map((item) => (
-                <li key={item} className="text-foreground text-lg md:text-xl font-medium">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+            </div>
+          </details>
         ))}
       </div>
     </section>

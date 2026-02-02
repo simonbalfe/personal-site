@@ -1,0 +1,753 @@
+---
+title: 'System Design: Designing for Scale'
+description: 'Practical patterns for building systems that handle millions of users, from caching strategies to database sharding.'
+date: '2025-03-30'
+authors:
+  [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
+tags: ['System Design', 'Architecture']
+coverImage: '/images/blog/blog-6.webp'
+---
+
+## System Design: Designing for Scale
+
+Practical patterns for building systems that handle millions of users, from caching strategies to database sharding.
+
+## When 10 Users Becomes 10 Million
+
+Our application worked great with 10 concurrent users. At 100, we saw occasional slowdowns. At 1,000, the database was the bottleneck. At 10,000, everything fell apart.
+
+This is the story of how we redesigned for scale and the system design patterns that got us to millions of users.
+
+## The Scaling Journey
+
+### Phase 1: Single Server (0-1K users)
+
+Everything on one machine:
+
+```
+[Load Balancer]
+      |
+[Single Server: App + DB + Cache]
+```
+
+**Limitations:**
+- Single point of failure
+- Vertical scaling only (limited)
+- Database becomes bottleneck
+
+### Phase 2: Separate Database (1K-10K users)
+
+Move database to dedicated server:
+
+```
+[Load Balancer]
+      |
+[App Servers (2-3)]
+      |
+[Database Server]
+```
+
+**Benefits:**
+- Independent scaling
+- Better resource allocation
+- Still manageable
+
+**New problems:**
+- Database still single point of failure
+- Network latency between app and DB
+
+## Caching Strategy
+
+### Phase 3: Add Caching Layer (10K-100K users)
+
+Introduce Redis for frequently accessed data:
+
+```
+[Load Balancer]
+      |
+[App Servers (5-10)]
+      |
+   [Redis]    [Database]
+```
+
+**What to cache:**
+- User sessions
+- API responses (with TTL)
+- Database query results
+- Computed values
+
+**Implementation:**
+
+```go
+func GetUser(userID string) (*User, error) {
+    // 1. Check cache
+    cached, err := redis.Get(ctx, fmt.Sprintf("user:%s", userID))
+    if err == nil {
+        var user User
+        json.Unmarshal([]byte(cached), &user)
+        return &user, nil
+    }
+    
+    // 2. Cache miss: query database
+    user, err := db.QueryUser(userID)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 3. Store in cache (TTL: 5 minutes)
+    data, _ := json.Marshal(user)
+    redis.Set(ctx, fmt.Sprintf("user:%s", userID), data, 5*time.Minute)
+    
+    return user, nil
+}
+```
+
+### Cache Invalidation Strategies
+
+The two hard problems in computer science: cache invalidation and naming things.
+
+**Time-based (TTL):**
+```go
+redis.Set(ctx, key, value, 5*time.Minute)
+```
+
+**Event-based:**
+```go
+func UpdateUser(user *User) error {
+    // Update database
+    err := db.UpdateUser(user)
+    if err != nil {
+        return err
+    }
+    
+    // Invalidate cache
+    redis.Del(ctx, fmt.Sprintf("user:%s", user.ID))
+    return nil
+}
+```
+
+**Write-through:**
+```go
+func UpdateUser(user *User) error {
+    // Update database
+    err := db.UpdateUser(user)
+    if err != nil {
+        return err
+    }
+    
+    // Update cache immediately
+    data, _ := json.Marshal(user)
+    redis.Set(ctx, fmt.Sprintf("user:%s", user.ID), data, 5*time.Minute)
+    return nil
+}
+```
+
+### Real-World Impact
+
+After adding Redis:
+- Database load: Down 70%
+- API response time: 200ms → 45ms (4.4x faster)
+- Peak throughput: 500 req/s → 2,000 req/s (4x improvement)
+
+## Database Replication
+
+### Phase 4: Read Replicas (100K-1M users)
+
+Most applications are read-heavy (90% reads, 10% writes). Use read replicas:
+
+```
+[Load Balancer]
+      |
+[App Servers (10-20)]
+      |
+[Redis Cache]
+      |
+Primary DB ----→ Read Replica 1
+       |------→ Read Replica 2
+       |------→ Read Replica 3
+```
+
+**Implementation:**
+
+```go
+type DBCluster struct {
+    primary  *sql.DB
+    replicas []*sql.DB
+    nextIdx  int
+}
+
+func (c *DBCluster) Write(query string, args ...interface{}) error {
+    // All writes go to primary
+    return c.primary.Exec(query, args...)
+}
+
+func (c *DBCluster) Read(query string, args ...interface{}) (*sql.Rows, error) {
+    // Round-robin across replicas
+    replica := c.replicas[c.nextIdx]
+    c.nextIdx = (c.nextIdx + 1) % len(c.replicas)
+    return replica.Query(query, args...)
+}
+```
+
+**Replication Lag:**
+
+Replicas aren't instantly up-to-date. Typical lag: 1-100ms.
+
+```go
+func CreatePost(post *Post) error {
+    // Write to primary
+    err := db.Primary.Insert(post)
+    if err != nil {
+        return err
+    }
+    
+    // Read immediately after write?
+    // MUST read from primary to avoid stale data
+    return db.Primary.QueryOne(post.ID)
+}
+```
+
+**Benefits:**
+- Horizontal scaling for reads
+- High availability (if primary fails, promote replica)
+- Geographically distributed replicas reduce latency
+
+## Load Balancing
+
+### Layer 7 (Application) Load Balancing
+
+Route requests based on content:
+
+```
+[Application Load Balancer]
+      |
+      ├─→ /api/orders → Order Service
+      ├─→ /api/users  → User Service
+      └─→ /api/search → Search Service
+```
+
+**ALB Configuration:**
+
+```hcl
+resource "aws_lb_listener_rule" "orders" {
+  listener_arn = aws_lb_listener.app.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.orders.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/orders/*"]
+    }
+  }
+}
+```
+
+### Health Checks
+
+Load balancers need to know which instances are healthy:
+
+```go
+// Health check endpoint
+http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+    // Check database connectivity
+    err := db.Ping()
+    if err != nil {
+        w.WriteHeader(http.StatusServiceUnavailable)
+        return
+    }
+    
+    // Check Redis connectivity
+    err = redis.Ping(ctx)
+    if err != nil {
+        w.WriteHeader(http.StatusServiceUnavailable)
+        return
+    }
+    
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("healthy"))
+})
+```
+
+### Sticky Sessions
+
+Sometimes you need requests from the same user to go to the same server:
+
+```
+User A ──→ Server 1 (session stored)
+User A ──→ Server 1 (same server!)
+User B ──→ Server 2
+User B ──→ Server 2 (same server!)
+```
+
+**Implementation:** Cookie-based routing or consistent hashing.
+
+**Better approach:** Store sessions in Redis (shared state), then any server can handle any request.
+
+## Database Sharding
+
+### Phase 5: Sharding (1M+ users)
+
+When a single database can't handle the load, shard it:
+
+```
+[App Servers]
+      |
+      ├─→ Shard 1 (Users A-F)
+      ├─→ Shard 2 (Users G-M)
+      ├─→ Shard 3 (Users N-S)
+      └─→ Shard 4 (Users T-Z)
+```
+
+**Sharding Strategies:**
+
+**1. Range-based sharding:**
+```go
+func GetShardForUser(userID string) *Database {
+    firstLetter := strings.ToUpper(userID[0:1])
+    
+    switch {
+    case firstLetter <= "F":
+        return shard1
+    case firstLetter <= "M":
+        return shard2
+    case firstLetter <= "S":
+        return shard3
+    default:
+        return shard4
+    }
+}
+```
+
+**2. Hash-based sharding:**
+```go
+func GetShardForUser(userID string) *Database {
+    hash := crc32.ChecksumIEEE([]byte(userID))
+    shardIdx := hash % uint32(len(shards))
+    return shards[shardIdx]
+}
+```
+
+**3. Geographic sharding:**
+```go
+func GetShardForUser(region string) *Database {
+    switch region {
+    case "us-east":
+        return usEastShard
+    case "eu-west":
+        return euWestShard
+    case "ap-south":
+        return apSouthShard
+    default:
+        return defaultShard
+    }
+}
+```
+
+**Challenges:**
+- Cross-shard queries are complex
+- Rebalancing shards is difficult
+- Application complexity increases
+
+**When to shard:**
+- Single database can't handle write load
+- Data doesn't fit on one server
+- You've exhausted vertical scaling
+
+## CDN for Static Assets
+
+### Phase 6: CDN (Global scale)
+
+Serve static assets from edge locations near users:
+
+```
+User in Tokyo ─→ CloudFront Edge (Tokyo) ─→ Origin (US)
+                     ↓ (cached)
+                Returns from edge
+```
+
+**What to cache:**
+- Images, videos
+- CSS, JavaScript bundles
+- API responses (with appropriate TTL)
+
+**CloudFront Configuration:**
+
+```hcl
+resource "aws_cloudfront_distribution" "main" {
+  enabled = true
+
+  origin {
+    domain_name = aws_s3_bucket.assets.bucket_regional_domain_name
+    origin_id   = "S3-Assets"
+  }
+
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "S3-Assets"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 3600  # 1 hour
+    max_ttl     = 86400 # 24 hours
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
+```
+
+**Benefits:**
+- Reduced latency (assets served from nearby edge)
+- Reduced load on origin servers
+- Better user experience globally
+
+## Asynchronous Processing
+
+### Message Queues for Background Jobs
+
+Don't make users wait for slow operations:
+
+```
+User Request ─→ API Server ─→ Response (fast!)
+                     |
+                     ├─→ Queue: Send Email
+                     ├─→ Queue: Process Image
+                     └─→ Queue: Update Analytics
+                              ↓
+                        [Worker Processes]
+```
+
+**Implementation with SQS:**
+
+```go
+// Enqueue job
+type EmailJob struct {
+    UserID    string
+    Template  string
+    Variables map[string]string
+}
+
+func SendWelcomeEmail(userID string) error {
+    job := EmailJob{
+        UserID:   userID,
+        Template: "welcome",
+        Variables: map[string]string{
+            "name": user.Name,
+        },
+    }
+    
+    data, _ := json.Marshal(job)
+    _, err := sqs.SendMessage(&sqs.SendMessageInput{
+        QueueUrl:    aws.String(queueURL),
+        MessageBody: aws.String(string(data)),
+    })
+    
+    return err
+}
+
+// Worker process
+func ProcessEmailQueue() {
+    for {
+        // Receive messages
+        result, err := sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
+            QueueUrl:            aws.String(queueURL),
+            MaxNumberOfMessages: aws.Int64(10),
+            WaitTimeSeconds:     aws.Int64(20), // Long polling
+        })
+        
+        for _, message := range result.Messages {
+            var job EmailJob
+            json.Unmarshal([]byte(*message.Body), &job)
+            
+            // Process job
+            err := emailService.Send(job)
+            if err == nil {
+                // Delete message from queue
+                sqs.DeleteMessage(&sqs.DeleteMessageInput{
+                    QueueUrl:      aws.String(queueURL),
+                    ReceiptHandle: message.ReceiptHandle,
+                })
+            }
+        }
+    }
+}
+```
+
+**Benefits:**
+- Faster API response times
+- Retry failed jobs automatically
+- Scale workers independently
+- System survives traffic spikes (queue absorbs load)
+
+## Circuit Breaker Pattern
+
+Prevent cascading failures:
+
+```go
+type CircuitBreaker struct {
+    maxFailures  int
+    timeout      time.Duration
+    failures     int
+    lastAttempt  time.Time
+    state        string // "closed", "open", "half-open"
+}
+
+func (cb *CircuitBreaker) Call(fn func() error) error {
+    if cb.state == "open" {
+        if time.Since(cb.lastAttempt) > cb.timeout {
+            cb.state = "half-open"
+        } else {
+            return errors.New("circuit breaker is open")
+        }
+    }
+    
+    err := fn()
+    if err != nil {
+        cb.failures++
+        cb.lastAttempt = time.Now()
+        
+        if cb.failures >= cb.maxFailures {
+            cb.state = "open"
+        }
+        return err
+    }
+    
+    // Success: reset
+    cb.failures = 0
+    cb.state = "closed"
+    return nil
+}
+```
+
+**Usage:**
+
+```go
+cb := &CircuitBreaker{
+    maxFailures: 5,
+    timeout:     30 * time.Second,
+}
+
+// Call external service
+err := cb.Call(func() error {
+    return paymentService.Charge(amount)
+})
+
+if err != nil {
+    // Circuit breaker is open or service failed
+    return fallbackResponse()
+}
+```
+
+**Prevents:**
+- Waiting for timeouts on failed services
+- Resource exhaustion from repeated failures
+- Cascading failures across system
+
+## Rate Limiting
+
+Protect your system from abuse and overload:
+
+```go
+type RateLimiter struct {
+    redis  *redis.Client
+    limit  int
+    window time.Duration
+}
+
+func (rl *RateLimiter) Allow(userID string) (bool, error) {
+    key := fmt.Sprintf("rate:%s", userID)
+    
+    // Increment counter
+    count, err := rl.redis.Incr(ctx, key).Result()
+    if err != nil {
+        return false, err
+    }
+    
+    // Set expiry on first request
+    if count == 1 {
+        rl.redis.Expire(ctx, key, rl.window)
+    }
+    
+    return count <= int64(rl.limit), nil
+}
+
+// Usage in middleware
+func RateLimitMiddleware(next http.Handler) http.Handler {
+    limiter := &RateLimiter{
+        redis:  redisClient,
+        limit:  100,
+        window: time.Minute,
+    }
+    
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        userID := getUserID(r)
+        
+        allowed, _ := limiter.Allow(userID)
+        if !allowed {
+            w.WriteHeader(http.StatusTooManyRequests)
+            w.Write([]byte("Rate limit exceeded"))
+            return
+        }
+        
+        next.ServeHTTP(w, r)
+    })
+}
+```
+
+## Monitoring and Observability
+
+### Metrics That Matter
+
+```go
+import "github.com/prometheus/client_golang/prometheus"
+
+var (
+    requestsTotal = prometheus.NewCounterVec(
+        prometheus.CounterOpts{
+            Name: "http_requests_total",
+            Help: "Total HTTP requests",
+        },
+        []string{"method", "path", "status"},
+    )
+    
+    requestDuration = prometheus.NewHistogramVec(
+        prometheus.HistogramOpts{
+            Name:    "http_request_duration_seconds",
+            Help:    "HTTP request latency",
+            Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10},
+        },
+        []string{"method", "path"},
+    )
+)
+
+// Instrument handlers
+func instrumentHandler(path string, handler http.HandlerFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        
+        // Call handler
+        handler(w, r)
+        
+        // Record metrics
+        duration := time.Since(start).Seconds()
+        requestsTotal.WithLabelValues(r.Method, path, "200").Inc()
+        requestDuration.WithLabelValues(r.Method, path).Observe(duration)
+    }
+}
+```
+
+### Key Metrics to Track
+
+1. **Latency** (p50, p95, p99)
+2. **Error rate** (errors/sec, % of requests)
+3. **Throughput** (requests/sec)
+4. **Saturation** (CPU, memory, disk, network)
+
+### Alert on SLOs
+
+```yaml
+# Prometheus alert rules
+groups:
+  - name: api_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m])
+          / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        annotations:
+          summary: "High error rate detected"
+          
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 1
+        for: 5m
+        annotations:
+          summary: "P95 latency above 1 second"
+```
+
+## The Final Architecture
+
+After all optimizations:
+
+```
+                    [CloudFront CDN]
+                            |
+                    [API Gateway]
+                            |
+                  [Application Load Balancer]
+                            |
+        ┌───────────────────┼───────────────────┐
+        |                   |                   |
+   [App Servers]       [App Servers]      [App Servers]
+        |                   |                   |
+        └───────────────────┼───────────────────┘
+                            |
+                ┌───────────┼───────────┐
+                |           |           |
+           [Redis]   [Message Queue]  [CDN]
+                |           |
+        ┌───────┴───────┐   |
+        |               |   |
+   [Primary DB]  [Read Replicas] ──┐
+        |               |           |
+   [Shard 1]       [Shard 2]   [Shard 3]
+```
+
+## Real-World Numbers
+
+Our journey from 10 to 10 million users:
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Response time (p95) | 2.5s | 150ms | 16.7x |
+| Throughput | 100 req/s | 50,000 req/s | 500x |
+| Database load | 90% CPU | 30% CPU | 3x reduction |
+| Monthly cost | $500 | $8,000 | 16x (but 100x users!) |
+| Cost per user | $0.05 | $0.0008 | 62x reduction |
+
+## Key Lessons
+
+1. **Cache aggressively** - Prevents repeated expensive operations
+2. **Scale horizontally** - Add more servers, not bigger servers
+3. **Async everything** - Don't make users wait
+4. **Measure everything** - You can't improve what you don't measure
+5. **Plan for failure** - Circuit breakers, retries, fallbacks
+6. **Shard when necessary** - But not too early
+7. **Use CDNs** - Serve content from edge locations
+
+## Conclusion
+
+Scaling from 10 to 10 million users isn't one change—it's many incremental improvements:
+
+1. Separate concerns (app, database, cache)
+2. Add caching layer
+3. Horizontal scaling with load balancing
+4. Database read replicas
+5. Async processing with queues
+6. CDN for static assets
+7. Sharding (when needed)
+
+Don't optimize prematurely. But understand these patterns so you're ready when you need them. Your architecture should evolve with your user base.
+
+Start simple, measure everything, and scale intentionally. Build for the scale you have today, with an architecture that can evolve for tomorrow.

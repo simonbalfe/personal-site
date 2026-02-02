@@ -1,139 +1,364 @@
 ---
-title: 'The Art of Code Review: Beyond Finding Bugs'
-description: 'How to give meaningful code reviews that improve code quality, share knowledge, and make your team better developers.'
+title: 'Kubernetes in Production: What They Don''t Tell You'
+description: 'Hard-won lessons from running Kubernetes in production, from resource management to debugging failures at 3 AM.'
 date: '2025-04-05'
 authors:
-  [
-    {
-      name: 'simon balfe',
-      image: '/images/blog/authors/yassine-zaanouni.webp',
-    },
-  ]
-tags: ['Best Practices', 'Team']
+  [{name: 'simon balfe', image: '/images/blog/authors/yassine-zaanouni.webp',},]
+tags: ['DevOps', 'Cloud']
 coverImage: '/images/blog/blog-3.webp'
 ---
 
-## The Art of Code Review: Beyond Finding Bugs
+## Kubernetes in Production: What They Don't Tell You
 
-How to give meaningful code reviews that improve code quality, share knowledge, and make your team better developers.
+Hard-won lessons from running Kubernetes in production, from resource management to debugging failures at 3 AM.
 
-## Why Code Reviews Matter
+## The Hype vs Reality
 
-Code reviews are often seen as a necessary evil—a gate to pass before merging. But when done right, they're one of the most valuable practices for building high-quality software and growing as developers.
+Kubernetes solves real problems. But it also introduces complexity that catches teams off guard. After migrating 30+ services to Kubernetes and on-call for production incidents, here's what I wish someone had told me.
 
-A good code review:
+## Resource Management: Get This Right First
 
-- Catches bugs before they reach production
-- Shares knowledge across the team
-- Maintains code quality and consistency
-- Mentors junior developers
-- Creates collective code ownership
+### CPU and Memory Requests vs Limits
 
-## What to Look For
+This is where most teams get burned:
 
-### 1. Logic and Correctness
-
-The obvious stuff—does the code do what it's supposed to do?
-
-- Are edge cases handled?
-- Are error conditions properly managed?
-- Does the logic make sense?
-
-### 2. Design and Architecture
-
-Zoom out and consider the bigger picture:
-
-- Does this fit well with the existing codebase?
-- Is it solving the right problem?
-- Will this be maintainable in six months?
-
-### 3. Readability
-
-Code is read far more often than it's written:
-
-- Are variable names descriptive?
-- Is the code self-documenting?
-- Would a new team member understand this?
-
-### 4. Testing
-
-Tests are first-class citizens:
-
-- Are there tests for the new functionality?
-- Do the tests cover edge cases?
-- Are the tests readable and maintainable?
-
-## How to Give Feedback
-
-### Be Kind, Be Clear
-
-Remember there's a human on the other end. Frame feedback constructively:
-
-**Instead of:** "This is wrong."
-**Try:** "I think this might cause issues when X happens. What do you think about handling it like Y?"
-
-### Explain the Why
-
-Don't just say what should change—explain why:
-
-```
-// Instead of:
-"Use a Set here"
-
-// Try:
-"A Set would be more efficient here since you're checking 
-for membership frequently, and it gives O(1) lookup vs O(n) for arrays"
+```yaml
+resources:
+  requests:
+    memory: "256Mi"   # Guaranteed amount
+    cpu: "100m"       # 0.1 CPU core
+  limits:
+    memory: "512Mi"   # Maximum allowed
+    cpu: "500m"       # Can burst to 0.5 cores
 ```
 
-### Ask Questions
+**Key lessons:**
 
-When you're unsure, ask rather than assume:
+1. **Set requests based on actual usage** - Profile your app under load
+2. **Memory limits kill pods** - If you hit the limit, pod gets OOMKilled
+3. **CPU limits cause throttling** - Your app will slow down, not crash
+4. **Different for different workloads** - Web servers need different resources than batch jobs
 
-- "I'm curious why you chose this approach?"
-- "Have you considered X as an alternative?"
-- "What happens if the user does Y?"
+### The OOMKilled Disaster
 
-### Distinguish Must-Fix from Nice-to-Have
+Our payment service kept crashing. Logs showed nothing. Turns out:
 
-Use prefixes to clarify importance:
+```bash
+$ kubectl describe pod payment-service-xxx
+...
+Last State: Terminated
+  Reason: OOMKilled
+  Exit Code: 137
+```
 
-- **Blocker:** Must be fixed before merge
-- **Suggestion:** Could be better, but not critical
-- **Nit:** Minor style preference
-- **Question:** Seeking understanding
+Memory limit was too low. Under load, memory usage spiked, Kubernetes killed the pod.
 
-## Common Pitfalls to Avoid
+**Fix:** Increased memory limit from 256Mi to 512Mi based on actual metrics.
 
-### Don't Be a Blocker
+## Deployment Strategies
 
-If something is genuinely blocking, say so. Otherwise, approve with suggestions and trust the author to address them.
+### Rolling Updates Done Right
 
-### Don't Bikeshed
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1          # How many extra pods during update
+    maxUnavailable: 0    # Keep all pods running during update
+```
 
-Don't spend 20 comments debating variable names while missing a security vulnerability. Focus on what matters.
+**Critical:** Set `maxUnavailable: 0` for production services. Never have fewer than desired replicas running.
 
-### Don't Make It Personal
+### Health Checks That Actually Work
 
-Review the code, not the person. "This function is confusing" is better than "You wrote confusing code."
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+```
 
-## For the Reviewee
+**Liveness vs Readiness:**
+- **Liveness**: Is the app alive? If not, restart it
+- **Readiness**: Is the app ready for traffic? If not, remove from load balancer
 
-Receiving feedback is a skill too:
+Don't make liveness too aggressive or you'll get crash loops.
 
-- **Don't take it personally** - The goal is better code
-- **Respond to all comments** - Even if just to acknowledge
-- **Ask for clarification** - If feedback is unclear
-- **Push back when appropriate** - If you disagree, explain why
+## Debugging Production Issues
 
-## Building a Review Culture
+### The CrashLoopBackOff Nightmare
 
-Great code review culture comes from:
+Your pod keeps restarting. Here's the debugging process:
 
-- **Leading by example** - Senior devs setting the tone
-- **Celebrating good reviews** - Recognize thoughtful feedback
-- **Keeping reviews small** - 200-400 lines is ideal
-- **Responding quickly** - Don't let PRs sit for days
+```bash
+# Check pod status
+kubectl get pods
+
+# Get recent events
+kubectl describe pod problem-pod-xxx
+
+# Check logs (including previous crashes)
+kubectl logs problem-pod-xxx --previous
+
+# Get a shell if pod is running long enough
+kubectl exec -it problem-pod-xxx -- /bin/sh
+```
+
+**Common causes:**
+1. App crashes on startup (check logs)
+2. Liveness probe failing (check probe config)
+3. OOMKilled (check memory limits)
+4. Missing config/secrets (check environment)
+
+### Network Policies Gone Wrong
+
+Traffic between services suddenly stopped working. Turns out we added a NetworkPolicy that was too restrictive:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend  # Only allow frontend pods
+    ports:
+    - port: 8080
+```
+
+**Lesson:** Start with permissive policies, then lock down incrementally.
+
+## ConfigMaps and Secrets
+
+### ConfigMaps for Configuration
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  database_host: "postgres.default.svc.cluster.local"
+  log_level: "info"
+  feature_flags: |
+    {
+      "new_checkout": true,
+      "beta_features": false
+    }
+```
+
+Mount as environment variables or files:
+
+```yaml
+envFrom:
+- configMapRef:
+    name: app-config
+```
+
+### Secrets for Sensitive Data
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+type: Opaque
+data:
+  username: YWRtaW4=  # base64 encoded
+  password: cGFzc3dvcmQ=
+```
+
+**Important:** Base64 is NOT encryption. Use external secret management (AWS Secrets Manager, HashiCorp Vault) for production.
+
+## Horizontal Pod Autoscaling
+
+Scale based on CPU, memory, or custom metrics:
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+```
+
+**Gotcha:** HPA needs metrics-server installed. If pods don't scale, check if metrics-server is running.
+
+## Persistent Storage
+
+### StatefulSets for Databases
+
+Don't run databases in Deployment. Use StatefulSet:
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:14
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi
+```
+
+StatefulSets provide:
+- Stable network identities (postgres-0, postgres-1)
+- Stable persistent storage
+- Ordered deployment and scaling
+
+### PersistentVolumeClaims
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: gp3  # AWS EBS gp3
+```
+
+**Storage classes matter:** gp3 is cheaper and faster than gp2. io2 for high IOPS workloads.
+
+## Monitoring and Observability
+
+### Prometheus for Metrics
+
+Expose metrics in your app:
+
+```go
+import "github.com/prometheus/client_golang/prometheus"
+
+var (
+    httpRequestsTotal = prometheus.NewCounterVec(
+        prometheus.CounterOpts{
+            Name: "http_requests_total",
+            Help: "Total HTTP requests",
+        },
+        []string{"method", "endpoint", "status"},
+    )
+)
+
+// Instrument handlers
+httpRequestsTotal.WithLabelValues("GET", "/api/users", "200").Inc()
+```
+
+Prometheus scrapes `/metrics` endpoint automatically.
+
+### Logging Best Practices
+
+```go
+log.WithFields(log.Fields{
+    "request_id": requestID,
+    "user_id": userID,
+    "duration_ms": duration,
+}).Info("Request completed")
+```
+
+Use structured logging (JSON) so you can search/filter in CloudWatch/ELK.
+
+## Cost Optimization
+
+### Right-Size Your Pods
+
+We wasted $3000/month on over-provisioned pods:
+
+```bash
+# Check actual resource usage
+kubectl top pods
+
+# Compare to requests/limits
+kubectl describe pod xxx | grep -A 5 "Requests:"
+```
+
+If actual usage is much lower than requests, reduce requests.
+
+### Cluster Autoscaler
+
+Scale nodes based on pending pods:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler
+data:
+  min-nodes: "2"
+  max-nodes: "10"
+  scale-down-delay: "10m"
+```
+
+Nodes automatically add/remove based on demand.
+
+## Lessons Learned
+
+1. **Start simple** - Don't use every K8s feature on day one
+2. **Resource limits are crucial** - Prevent noisy neighbor problems
+3. **Health checks save lives** - Catch issues before users do
+4. **Logs are essential** - You'll need them at 3 AM
+5. **Cost adds up fast** - Monitor and optimize regularly
+
+## When NOT to Use Kubernetes
+
+Kubernetes is overkill if you:
+- Have < 5 services
+- Don't need auto-scaling
+- Have a small team (< 3 engineers)
+- Run mostly serverless workloads
+
+Consider ECS, Cloud Run, or App Runner instead.
 
 ## Conclusion
 
-Code reviews are an investment in your team's future. Every review is an opportunity to share knowledge, prevent bugs, and make each other better developers. Approach them with curiosity and kindness, and they'll become one of the most valuable parts of your development process.
+Kubernetes solves real orchestration problems, but it's complex. The payoff comes when you need its features: auto-scaling, self-healing, rolling updates, and multi-cloud portability.
+
+Invest time in understanding the primitives (Pods, Services, Deployments). Get resource management right. Build good observability. Then Kubernetes becomes a powerful platform rather than a source of 3 AM pages.

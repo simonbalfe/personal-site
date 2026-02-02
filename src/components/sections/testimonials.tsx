@@ -38,14 +38,14 @@ export function Testimonials() {
       {/* Work experience - vertical timeline */}
       <div className="divide-y border border-t-0">
         {experience.map((job) => (
-          <div key={job.company} className="bordered-div-padding flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-1 md:w-1/3">
-              <p className="text-muted-foreground text-base md:text-lg">{job.period}</p>
+          <div key={job.company} className="px-6 py-4 md:px-8 md:py-5 lg:px-10 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div className="md:w-1/3">
+              <p className="text-muted-foreground text-sm md:text-base">{job.period}</p>
             </div>
-            <div className="space-y-3 md:w-2/3">
-              <h3 className="font-weight-display text-xl md:text-2xl">{job.role}</h3>
-              <p className="text-secondary font-medium text-lg md:text-xl">{job.company}</p>
-              <p className="text-muted-foreground text-base md:text-lg">{job.description}</p>
+            <div className="space-y-1 md:w-2/3">
+              <h3 className="font-weight-display text-lg md:text-xl">{job.role}</h3>
+              <p className="text-secondary font-medium text-base md:text-lg">{job.company}</p>
+              <p className="text-muted-foreground text-sm md:text-base">{job.description}</p>
             </div>
           </div>
         ))}

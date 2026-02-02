@@ -31,5 +31,5 @@ const allTags = [...new Set(posts.flatMap((post: any) => post.data.tags || []))]
 ---
 
 <DefaultLayout title={`${tag} - ${SITE_TITLE}`} description={`Blog posts tagged with ${tag}`}>
-  <BlogPosts blogPosts={filteredPosts} allTags={allTags} activeTag={tag} client:load />
+  <BlogPosts blogPosts={filteredPosts} allTags={allTags} activeTag={tag} />
 </DefaultLayout>
