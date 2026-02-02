@@ -30,7 +30,7 @@ export default function BlogPosts({
           <a
             href="/blog"
             className={cn(
-              'rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
+              'border px-4 py-1.5 text-sm font-medium transition-colors',
               !activeTag
                 ? 'bg-foreground text-background border-foreground'
                 : 'hover:bg-muted'
@@ -43,7 +43,7 @@ export default function BlogPosts({
               key={tag}
               href={`/blog/tag/${getTagSlug(tag)}`}
               className={cn(
-                'rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
+                'border px-4 py-1.5 text-sm font-medium transition-colors',
                 activeTag === tag
                   ? 'bg-foreground text-background border-foreground'
                   : 'hover:bg-muted'
