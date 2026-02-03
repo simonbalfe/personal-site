@@ -19,7 +19,7 @@ export default function BlogPosts({
       <div className="hidden p-7.5 md:block border-x" />
 
       <div className="bordered-div-padding border border-t-0">
-        <h1 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-5xl">
+        <h1 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-4xl">
           Blog
         </h1>
       </div>
@@ -91,15 +91,15 @@ function BlogPostItem({
   return (
     <a
       href={`/blog/${post.slug}`}
-      className="px-6 py-4 md:px-8 md:py-5 lg:px-10 flex flex-col gap-2 md:flex-row md:items-start md:justify-between transition-colors hover:bg-muted"
+      className="px-6 py-5 md:px-8 md:py-6 lg:px-10 flex flex-col gap-2 md:flex-row md:items-start md:justify-between transition-colors hover:bg-muted"
     >
       <div className="md:w-1/3">
-        <time className="text-muted-foreground text-sm md:text-base">
+        <time className="text-muted-foreground text-base md:text-lg">
           {formattedDate}
         </time>
       </div>
       <div className="md:w-2/3">
-        <h2 className="font-weight-display text-lg md:text-xl">
+        <h2 className="font-weight-display text-xl md:text-2xl">
           {post.title}
         </h2>
       </div>

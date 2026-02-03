@@ -126,16 +126,8 @@ function Navbar({ currentPage }: NavbarProps) {
                 }}
                 className="fixed inset-0 top-16 z-50 container flex flex-col overflow-hidden bg-background text-foreground text-sm font-medium lg:hidden"
               >
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
-                >
-                  <NavBarAction setIsMenuOpen={setIsMenuOpen} />
-                </motion.div>
-
-                <motion.div
-                  className="bordered-div-padding flex flex-1 flex-col space-y-3 overflow-y-auto border-x"
+                  <motion.div
+                  className="bordered-div-padding flex flex-1 flex-col space-y-3 overflow-y-auto border"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.15, duration: 0.3 }}

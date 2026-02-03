@@ -8,10 +8,13 @@ export function RecentPosts({ posts }: RecentPostsProps) {
   return (
     <section className="container">
       {/* Section Heading */}
-      <a href="/blog" className="bordered-div-padding border border-t-0 block transition-colors hover:bg-muted">
+      <a href="/blog" className="bordered-div-padding border border-t-0 flex flex-col gap-2 md:flex-row md:items-center md:justify-between transition-colors hover:bg-muted">
         <h2 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-4xl">
           Blog
         </h2>
+        <p className="text-muted-foreground text-base md:text-lg">
+          &gt; Thoughts on code and craft.
+        </p>
       </a>
 
       {/* Posts List */}
