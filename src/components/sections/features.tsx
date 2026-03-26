@@ -1,30 +1,35 @@
-import { PlusSigns } from '@/components/icons/plus-signs';
+import { FadeIn, FadeInItem, FadeInStagger } from '@/components/ui/fade-in';
 
 const features = [
   {
-    title: 'MVP Development',
+    title: 'AI Lead Generation',
     description:
-      'I turn your concept into a working product fast. You get a polished MVP to test with real users, validate your market, and start generating traction.',
+      'I build AI systems that find, qualify, and engage leads on autopilot. Automated prospecting, personalized outreach at scale, and enrichment pipelines that fill your CRM with warm leads.',
   },
   {
-    title: 'Agentic LLM Workflows',
+    title: 'Production-Ready AI Agents',
     description:
-      'I build custom AI agents that automate your repetitive tasks, process documents, and make decisions. Save hours of manual work every week.',
+      'I ship agentic workflows that run unsupervised in production. Reliable tool use, error recovery, observability, and human-in-the-loop patterns built for real workloads.',
   },
   {
-    title: 'Cloud',
+    title: 'LLM-Powered Automation',
     description:
-      'I set up and manage your cloud infrastructure so it grows with your business. No surprise bills, no downtime—just reliable systems that handle your traffic.',
-  },
-  {
-    title: 'DevOps',
-    description:
-      'I automate your deployments so you can ship updates in minutes, not days. Your team pushes code, it goes live safely—every time.',
+      'I replace manual processes with LLM pipelines that actually work. Document processing, content generation, data extraction, and decision-making systems with eval frameworks to keep them honest.',
   },
   {
     title: 'System Design',
     description:
-      "I design systems that won't fall over as you grow. You get a clear technical roadmap and an architecture that handles 10x your current load.",
+      "I design systems that won't fall over as you grow. Clear technical roadmaps and architectures that handle 10x your current load.",
+  },
+  {
+    title: 'Cloud & DevOps',
+    description:
+      'I set up infrastructure and CI/CD pipelines so your team ships fast without breaking things. Automated deployments, observability, and cost-efficient cloud setups.',
+  },
+  {
+    title: 'MVP Development',
+    description:
+      'I turn your concept into a working product fast. A polished MVP to test with real users, validate your market, and start generating traction.',
   },
 ];
 
@@ -32,24 +37,21 @@ export function Features() {
   return (
     <section className="container">
       {/* Section Heading */}
-      <div className="bordered-div-padding border border-t-0 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <FadeIn className="bordered-div-padding border border-t-0 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h2 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-4xl">
           What I Do
         </h2>
         <p className="text-muted-foreground text-base md:text-lg">
           &gt; I build things that make a difference.
         </p>
-      </div>
+      </FadeIn>
 
-      <div className="border border-t-0 divide-y">
+      <FadeInStagger className="border border-t-0 divide-y">
         {features.map((feature, index) => (
-          <div
+          <FadeInItem
             key={index}
             className="px-6 py-5 md:px-8 md:py-6 lg:px-10 relative flex gap-6 md:gap-10 lg:gap-16"
           >
-            {index === 0 && (
-              <PlusSigns className="absolute inset-0 -mt-0.25 hidden !h-[calc(100%+2px)] -translate-x-full border-y md:block" />
-            )}
             <span className="text-muted-foreground font-mono text-sm md:text-base shrink-0">
               {String(index + 1).padStart(2, '0')}
             </span>
@@ -61,9 +63,9 @@ export function Features() {
                 {feature.description}
               </p>
             </div>
-          </div>
+          </FadeInItem>
         ))}
-      </div>
+      </FadeInStagger>
     </section>
   );
 }

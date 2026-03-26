@@ -26,6 +26,7 @@ type NavItem = {
 };
 
 const navigationItems: NavItem[] = [
+  { title: '/projects', href: '#projects' },
   { title: '/blog', href: '/blog' },
   { title: '/contact', href: '#contact' },
 ];
@@ -96,6 +97,12 @@ function Navbar({ currentPage }: NavbarProps) {
           </div>
           {/* Desktop Navigation */}
           <div className="hidden flex-1 items-center justify-end gap-6 lg:flex">
+            <a
+              href="#projects"
+              className="text-base font-medium hover:text-muted-foreground transition-colors"
+            >
+              /projects
+            </a>
             <a
               href="/blog"
               className={cn(

@@ -6,6 +6,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { Compatibility } from '@/components/sections/compatibility';
 import { Features } from '@/components/sections/features';
 import { Hero } from '@/components/sections/hero';
+import { Projects } from '@/components/sections/projects';
 import { RecentPosts } from '@/components/sections/recent-posts';
 import { Testimonials } from '@/components/sections/testimonials';
 import DefaultLayout from '@/layouts/DefaultLayout.astro';
@@ -20,6 +21,7 @@ const posts = (await getCollection('blog'))
 <DefaultLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <Hero client:load />
   <Features client:visible />
+  <Projects client:visible />
   <Compatibility client:visible />
   <Testimonials client:visible />
   <RecentPosts posts={posts} client:visible />

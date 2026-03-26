@@ -2,6 +2,7 @@
 
 import { FaGithub } from 'react-icons/fa6';
 
+import { FadeIn } from '@/components/ui/fade-in';
 import { Button } from '@/components/ui/button';
 
 export function Hero() {
@@ -10,18 +11,18 @@ export function Hero() {
       <div className="container">
         <div className="bordered-div-padding relative flex flex-col items-center gap-8 border-x border-b text-center md:gap-10 lg:gap-12 lg:!py-25">
           {/* Main Heading */}
-          <div className="max-w-3xl space-y-6 md:space-y-8">
+          <FadeIn className="max-w-3xl space-y-6 md:space-y-8">
             <h1 className="font-weight-display text-4xl leading-tight tracking-tighter md:text-5xl lg:text-6xl">
               Hi, I'm Simon
             </h1>
             <p className="text-muted-foreground mx-auto max-w-[600px] text-lg leading-relaxed md:text-xl">
-              Software engineer writing about building scalable systems, clean architecture, and
-              lessons from the startup trenches.
+              Software engineer writing about production-ready AI agents, LLM-powered lead
+              generation, and scalable systems that drive real revenue.
             </p>
-          </div>
+          </FadeIn>
 
           {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+          <FadeIn delay={0.2} className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
             <Button asChild>
               <a href="/blog">Read the Blog</a>
             </Button>
@@ -31,7 +32,7 @@ export function Hero() {
                 GitHub
               </a>
             </Button>
-          </div>
+          </FadeIn>
         </div>
       </div>
     </section>
