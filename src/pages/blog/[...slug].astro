@@ -2,7 +2,6 @@
 import { getCollection, render } from 'astro:content';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-import { Meteors } from '@/components/magicui/meteors';
 import DefaultLayout from '@/layouts/DefaultLayout.astro';
 
 export async function getStaticPaths() {
@@ -105,14 +104,7 @@ const authors = post.data.authors || [];
           </nav>
         </div>
       </article>
-      <div class="relative hidden overflow-hidden border-t py-8 md:block">
-        <Meteors
-          number={1000}
-          angle={65}
-          maxDuration={20}
-          minDuration={5}
-          className="opacity-10 [&>div]:opacity-10"
-        />
+      <div class="border-t py-8">
       </div>
     </div>
   </div>

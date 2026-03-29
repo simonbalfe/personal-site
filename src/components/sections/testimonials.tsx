@@ -1,4 +1,3 @@
-import { Meteors } from '@/components/magicui/meteors';
 import { FadeIn, FadeInItem, FadeInStagger } from '@/components/ui/fade-in';
 
 const experience = [
@@ -22,15 +21,6 @@ export function Testimonials() {
     <section className="container">
       {/* Section Heading */}
       <FadeIn className="bordered-div-padding relative border border-t-0 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className="absolute top-0 z-10 left-full -mt-0.25 hidden h-[calc(100%+2px)] w-[50vw] overflow-hidden md:block">
-          <Meteors
-            number={1000}
-            angle={65}
-            maxDuration={20}
-            minDuration={5}
-            className="opacity-10 [&>div]:opacity-10"
-          />
-        </div>
         <h2 className="font-weight-display text-2xl leading-snug tracking-tighter md:text-3xl lg:text-4xl">
           Experience
         </h2>
