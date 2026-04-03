@@ -75,7 +75,7 @@ const projects = [
   {
     name: 'Google Maps Tracker',
     description:
-      'Ship subscription SaaS faster. A production-ready starter kit with auth, Stripe billing, transactional email, and one-command deployment already wired up so you can skip the boilerplate and start building.',
+      'Pull verified leads straight from Google Maps for cold outreach. Search any niche and location, enrich with contact details, and export a ready-to-dial list so your sales team spends time calling, not researching.',
     tech: ['Next.js', 'Drizzle', 'Stripe', 'Better Auth', 'Resend', 'Redis'],
     github: 'https://github.com/simonbalfe/map-tracker',
   },
