@@ -21,10 +21,8 @@ const posts = (await getCollection('blog'))
 
 <DefaultLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <Hero client:load />
-  <div class="container">
-    <NewsletterSignup client:visible />
-  </div>
   <Features client:visible />
+  <NewsletterSignup client:load />
   <Projects client:visible />
   <Compatibility client:visible />
   <Testimonials client:visible />
