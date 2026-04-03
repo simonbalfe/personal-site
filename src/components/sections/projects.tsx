@@ -21,6 +21,7 @@ const projects = [
     description:
       'One API to pull data from TikTok, Instagram, YouTube, Twitter, and Reddit. Profiles, videos, comments, transcripts. Built to plug directly into AI agent workflows so your automations can act on real social data.',
     tech: ['TypeScript', 'NestJS', 'Playwright', 'Redis', 'MCP'],
+    github: 'https://github.com/simonbalfe/creator-crawl',
   },
   {
     name: 'Ekron AI Voice Agent',
