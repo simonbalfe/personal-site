@@ -6,26 +6,26 @@ const projects = [
   {
     name: 'Shrillecho',
     description:
-      'Distributed Spotify artist discovery tool. Input a seed artist and crawl depth, then parallel Go workers traverse Spotify\'s related artists graph, streaming progress via SSE and persisting results to Postgres.',
+      'Discover hidden artists on Spotify in seconds. Pick a seed artist, set how deep you want to go, and watch as it maps out an entire network of related talent you\'d never find manually.',
     tech: ['React', 'Hono', 'Go', 'PostgreSQL', 'Redis', 'Turborepo'],
     github: 'https://github.com/simonbalfe/shrillecho',
   },
   {
     name: 'Sublead',
     description:
-      'Subreddit lead generation platform. Monitors Reddit for high-intent posts matching target keywords, scores them for purchase intent, and surfaces qualified leads for outreach.',
+      'Turn Reddit into a lead generation machine. Automatically finds people actively looking for solutions like yours, scores them by purchase intent, and hands you a list of warm leads ready for outreach.',
     tech: ['Next.js', 'TypeScript', 'PostgreSQL', 'Redis', 'OpenAI'],
   },
   {
     name: 'Creator Crawl',
     description:
-      'Social media data API and MCP server. Scrapes TikTok, Instagram, YouTube, Twitter, and Reddit for profiles, videos, comments, and transcripts. Powers agent workflows via Model Context Protocol.',
+      'One API to pull data from TikTok, Instagram, YouTube, Twitter, and Reddit. Profiles, videos, comments, transcripts. Built to plug directly into AI agent workflows so your automations can act on real social data.',
     tech: ['TypeScript', 'NestJS', 'Playwright', 'Redis', 'MCP'],
   },
   {
     name: 'Ekron AI Voice Agent',
     description:
-      'Outbound communication service for Ekron with business-hours routing. AI handles calls and SMS outside hours via Twilio, with email outreach templates through Resend.',
+      'Never miss a lead outside business hours. An AI voice agent picks up calls and texts when the team is offline, qualifies prospects in real time, and sends follow-up emails automatically.',
     tech: ['NestJS', 'TypeScript', 'Twilio', 'Resend', 'Retell AI'],
     github: 'https://github.com/simonbalfe/ekron-outbound',
     live: 'https://dashboard.retellai.com/agents/agent_d8f7d6402ff67b0c1a7b2c1016',
@@ -33,56 +33,64 @@ const projects = [
   {
     name: 'Lead Spice',
     description:
-      'Full-stack lead generation platform with dashboard, marketing site, and headless CMS. Monorepo with four services handling core API, dashboard with DB schema, Astro landing page, and Sanity content management.',
+      'End-to-end lead generation platform with a real-time dashboard, marketing site, and content management. Captures, qualifies, and organizes leads in one place so sales teams can focus on closing.',
     tech: ['NestJS', 'Next.js', 'Astro', 'Sanity', 'PostgreSQL', 'Drizzle'],
     github: 'https://github.com/awj-automate/lead-spice',
   },
   {
     name: 'AdGen',
     description:
-      'AI-powered TV commercial script generator. Paste a product URL, select a target audience and ad framework (PAS, Hero\'s Journey), and get a production-ready 30-second scene-by-scene script with visuals and voiceover.',
+      'Generate TV commercial scripts in minutes, not weeks. Paste a product URL, pick your audience and ad framework, and get a production-ready 30-second script with scene breakdowns, visuals, and voiceover direction.',
     tech: ['Next.js', 'Hono', 'OpenRouter', 'Replicate', 'Prisma', 'Turborepo'],
     github: 'https://github.com/unsaid-azizov/adgen',
   },
   {
     name: 'OpenClaw Discord',
     description:
-      'SaaS for deploying and managing AI-powered Discord bots with automated VPS provisioning. Control server spins up Vultr instances, configures them via Ansible, and tracks bot analytics through a web dashboard.',
+      'Deploy and manage AI-powered Discord bots without touching a server. One click spins up a fully configured VPS, and a dashboard tracks every bot\'s performance and usage in real time.',
     tech: ['Elysia', 'Bun', 'React', 'Vultr API', 'Ansible', 'PostgreSQL'],
     github: 'https://github.com/simonbalfe/openclaw-discord',
   },
   {
     name: 'Harmony',
     description:
-      'Asynchronous HTTP web framework built from scratch in C++20 using coroutines and Linux io_uring. Implements a full async runtime with coroutine-based task scheduling and non-blocking socket I/O.',
+      'A high-performance HTTP framework built from scratch in C++20. Handles thousands of concurrent connections with zero blocking, using coroutines and Linux\'s fastest I/O engine under the hood.',
     tech: ['C++20', 'CMake', 'io_uring', 'Docker'],
     github: 'https://github.com/simonbalfe/old-projects/tree/main/harmony',
   },
   {
     name: 'Brevo Ads SMS Automation',
     description:
-      'AI-powered lead qualification via conversational SMS. When a lead submits their number through a Brevo form, an AI agent qualifies them over text, books calls for qualified leads, and follows up with inactive ones.',
+      'Qualify leads on autopilot over SMS. When someone fills out a form, an AI agent texts them back, asks the right questions, books calls for hot leads, and follows up with the ones that go cold.',
     tech: ['Hono', 'React', 'Mastra', 'Twilio', 'Brevo', 'OpenRouter'],
     github: 'https://github.com/simonbalfe/brevo-ads',
   },
   {
     name: 'Virality Scanner',
     description:
-      'Analyzes social media content to predict viral potential. Scores posts based on engagement patterns, hook strength, and trending signals to help creators optimize before publishing.',
+      'Know if your content will pop before you post it. Scores hooks, engagement patterns, and trending signals so creators can tweak and optimize for maximum reach before hitting publish.',
     tech: ['TypeScript', 'React', 'OpenAI', 'TikTok API'],
   },
   {
     name: 'Google Maps Tracker',
     description:
-      'SaaS boilerplate and starter kit for subscription-based web apps. Includes auth (email + Google OAuth), Stripe billing with webhooks, transactional email, Redis caching, and Hetzner deployment with Docker.',
+      'Ship subscription SaaS faster. A production-ready starter kit with auth, Stripe billing, transactional email, and one-command deployment already wired up so you can skip the boilerplate and start building.',
     tech: ['Next.js', 'Drizzle', 'Stripe', 'Better Auth', 'Resend', 'Redis'],
     github: 'https://github.com/simonbalfe/map-tracker',
   },
   {
     name: 'Email Router',
     description:
-      'Intelligent email routing system that classifies inbound emails by intent and routes them to the appropriate handler. Automates triage for support, sales, and operational emails.',
+      'Stop manually sorting emails. AI reads every inbound message, figures out if it\'s support, sales, or ops, and routes it to the right person instantly. No rules to maintain, no emails slipping through the cracks.',
     tech: ['TypeScript', 'NestJS', 'OpenAI', 'Redis'],
+    github: 'https://github.com/simonbalfe/email-router',
+  },
+  {
+    name: 'AI Setter',
+    description:
+      'AI sales agents that live inside WhatsApp, Telegram, and ManyChat. Each agent gets its own personality, tools, and platform setup. Handles conversations, qualifies leads, and books calls while you sleep.',
+    tech: ['TypeScript', 'Bun', 'Hono', 'Mastra', 'BullMQ', 'PostgreSQL', 'Redis'],
+    github: 'https://github.com/unsaid-azizov/ai-setter',
   },
 ];
 
