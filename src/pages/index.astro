@@ -9,7 +9,6 @@ import { Hero } from '@/components/sections/hero';
 import { Projects } from '@/components/sections/projects';
 import { RecentPosts } from '@/components/sections/recent-posts';
 import { Testimonials } from '@/components/sections/testimonials';
-import NewsletterSignup from '@/components/newsletter-signup';
 import DefaultLayout from '@/layouts/DefaultLayout.astro';
 import { transformBlogPost } from '@/lib/blog';
 
@@ -22,7 +21,6 @@ const posts = (await getCollection('blog'))
 <DefaultLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <Hero client:load />
   <Features client:visible />
-  <NewsletterSignup client:load />
   <Projects client:visible />
   <Compatibility client:visible />
   <Testimonials client:visible />

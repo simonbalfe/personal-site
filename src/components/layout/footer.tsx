@@ -1,6 +1,7 @@
 import { Mail } from 'lucide-react';
 import { FaGithub, FaLinkedin, FaXTwitter } from 'react-icons/fa6';
 
+import NewsletterSignup from '@/components/newsletter-signup';
 import { EXTERNAL_LINKS } from '@/constants/external-links';
 
 const links = [
@@ -40,6 +41,8 @@ const Footer = () => {
             automations. Get in touch.
           </p>
         </div>
+
+        <NewsletterSignup />
 
         {/* Links grid */}
         <div className="grid grid-cols-2 divide-x divide-y border border-t-0 md:grid-cols-4 md:divide-y-0">

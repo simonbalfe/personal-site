@@ -29,6 +29,7 @@ const navigationItems: NavItem[] = [
   { title: '/projects', href: '#projects' },
   { title: '/blog', href: '/blog' },
   { title: '/contact', href: '#contact' },
+  { title: '/subscribe', href: '/#newsletter' },
 ];
 
 interface NavbarProps {
@@ -117,6 +118,12 @@ function Navbar({ currentPage }: NavbarProps) {
               className="text-base font-medium hover:text-muted-foreground transition-colors"
             >
               /contact
+            </a>
+            <a
+              href="/#newsletter"
+              className="text-base font-medium hover:text-muted-foreground transition-colors"
+            >
+              /subscribe
             </a>
           </div>
 
