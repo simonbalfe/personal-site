@@ -1,6 +1,6 @@
 ---
 title: 'How a LinkedIn Connection Request Actually Gets Automated'
-description: 'A plain-English walkthrough for sales and GTM teams. We follow a single connection request from the Connect button down to the one URL inside LinkedIn that actually creates it. Technical names come at the end.'
+description: 'A plain-English walkthrough for sales and GTM teams. We follow a single connection request from the Connect button down to the one URL inside LinkedIn that actually creates it.'
 date: '2026-05-23'
 authors:
   [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
@@ -12,7 +12,7 @@ If you sell for a living, you have probably used a LinkedIn automation tool. Exp
 
 They all send connection requests on your behalf. Almost none of them explain what's actually happening when they do it.
 
-This post follows a single connection request from the moment you'd click Connect, all the way down to the one thing LinkedIn's computers actually receive. Plain English first. The tech names come at the end.
+This post follows a single connection request from the Connect button all the way down to the one thing LinkedIn actually receives.
 
 ## The human version
 
@@ -28,17 +28,17 @@ That's the visible part. The invisible part is what automation has to copy.
 
 ## What's actually going on when you click Send
 
-Pressing Send doesn't really "click" anything. Your browser quietly sends a short, structured message to LinkedIn's computers. It says, in effect:
+Pressing Send doesn't really "click" anything. Your browser quietly sends a short, structured message to LinkedIn's computers. The technical name for that message is an **HTTP request**, the standard way browsers and servers talk.
+
+The message says, in effect:
 
 *"Create a new invitation from me to this person, with this note."*
 
-LinkedIn's computers reply: *"done"* or *"no, here's why not."* Your screen updates based on the reply.
+Three things travel with it every time:
 
-Three things travel with that message every time:
-
-- **An address.** A specific spot inside LinkedIn that handles invitations. Only one such spot exists. Every invite, from anyone, goes through it.
-- **A small package of info.** Who the invite is for, and what note to include.
-- **Proof it's really you.** A bundle of identification your browser carries, so LinkedIn knows the request is from your account.
+- **An address.** A specific spot inside LinkedIn that handles invitations. It sits inside LinkedIn's behind-the-scenes API (called **Voyager**, the same one their mobile app uses). The exact URL is `voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreateV2`. One front door, every invite goes through it.
+- **A small package of info.** Who the invite is for, and what note to include. The prospect isn't identified by the URL you see in your browser. They have an internal ID called a **URN** that looks like `urn:li:fsd_profile:ACoAAB1234...`. The tool has to look this up first.
+- **Proof it's really you.** Your browser carries a login token called the **`li_at` cookie**. Anyone holding a valid one can act as that account. It also carries an extra security code (a **CSRF token**) so random websites can't trick your browser into firing invites for them, and a small stamp (`x-li-page-instance`) saying "I was on Jane's profile when I clicked."
 
 If any of those three are missing or wrong, the invite fails.
 
@@ -48,58 +48,39 @@ An automation tool does the same three things, without you clicking.
 
 The recipe:
 
-- Get a copy of your login credentials from your browser, one time, by hand.
-- Look up the prospect's internal ID inside LinkedIn.
-- Build the same message a browser would build: prospect, note, login proof.
-- Send it to that one address.
+- Grab a copy of your `li_at` from your browser, one time, by hand.
+- Look up the prospect's URN inside LinkedIn.
+- Build the same HTTP request a browser would build: prospect URN, note, login proof.
+- Send it to that one URL.
 - Read the reply. If it worked, log it. If it didn't, react.
 
 That's the whole trick. *Build the same request your browser would build, then send it without the browser.*
 
 ## What LinkedIn says back
 
-You never see these replies yourself. The tool sees them and reacts.
+LinkedIn's reply is just a number (an **HTTP status code**) and a short body. You never see it yourself. The tool sees it and reacts.
 
-- **"OK, done."** Invite sent. Counter ticks up.
-- **"You've hit your weekly limit."** LinkedIn caps invites somewhere around 100 to 200 per account per week. The cap moves around without warning.
-- **"You look like a bot."** The account needs a cool-down period before it can send more.
-- **"Already connected"** or **"already invited."** Skip the prospect.
+- **`200` — OK, done.** Invite sent. Counter ticks up.
+- **`429` — you've hit your weekly limit.** LinkedIn caps invites somewhere around 100 to 200 per account per week. The cap moves around without warning.
+- **`403` — you look like a bot.** The account needs a cool-down before it can send more.
+- **Error body saying "already connected" or "already invited".** Skip the prospect.
 
 Those four cases cover almost every outcome. A good tool handles each one quietly so you don't have to.
 
 ## Why automation tools sometimes open a real browser anyway
 
-If the recipe is so simple, why do some tools run a hidden browser in the background?
+If the recipe is so simple, why do some tools run a hidden Chrome in the background?
 
-- **LinkedIn occasionally shows an anti-bot challenge on this endpoint.** Solving it needs a real browser, because the challenge runs as code inside the page.
-- **Faking the login proof by hand is fiddly.** A real browser builds it all for you, so the tool doesn't have to maintain a perfect impersonation.
+- **LinkedIn occasionally fires an anti-bot challenge on this endpoint.** Solving it needs a real browser, because the challenge runs as code inside the page.
+- **Faking the login proof by hand is fiddly.** A real browser builds it all for you (cookies, CSRF token, page stamp), so the tool doesn't have to maintain a perfect impersonation.
 
-For the actual invite, though, the request itself is the small structured message described above. No browser strictly required, as long as the impersonation holds up.
+For the actual invite, though, no browser is strictly required, as long as the impersonation holds up.
 
 ## The picture in three lines
 
-- A connection request is a small message sent from your browser to one specific spot inside LinkedIn.
-- Automation is software that sends the same message without you clicking.
-- Everything LinkedIn checks (login proof, prospect ID, note, weekly cap) gets checked at that one spot.
-
----
-
-## Now, the technical names
-
-If you want to read a tool's docs or talk to your engineer about this without getting lost:
-
-| Plain English | Technical name | What it actually is |
-| --- | --- | --- |
-| The short message your browser sends | **HTTP request** | The standard way browsers and servers talk. |
-| LinkedIn's behind-the-scenes URLs | **Voyager API** | LinkedIn's internal API. Same one their mobile app uses. URLs start with `linkedin.com/voyager/api/...`. |
-| The one address that handles invites | `voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreateV2` | The single URL every connection request goes to, human or automated. |
-| The prospect's internal LinkedIn ID | **URN** (Uniform Resource Name) | Looks like `urn:li:fsd_profile:ACoAAB1234...`. The URL slug (`/in/jane-doe`) is for humans; the URN is what LinkedIn's code uses. |
-| Your login credentials | **`li_at` cookie** | A short text token your browser carries. Anyone holding a valid `li_at` can act as that account. |
-| The extra security code | **CSRF token** | Cross-Site Request Forgery token. Stops random websites tricking your browser into firing invites for them. |
-| The "I was on Jane's profile" stamp | **`x-li-page-instance`** | A header that tells LinkedIn the click came from a sensible page. |
-| The reply codes | **HTTP status codes** | `200` = OK. `429` = weekly cap hit. `403` = looks like a bot. The tool reads these and reacts. |
-
-That's the whole vocabulary you need for this one endpoint. Every connection-request automation, on every tool, is built out of those pieces.
+- A connection request is an HTTP request from your browser to one URL inside LinkedIn's Voyager API.
+- Automation is software that builds the same request without you clicking.
+- Everything LinkedIn checks (login proof, prospect URN, note, weekly cap) gets checked at that one URL.
 
 ---
 
@@ -107,10 +88,10 @@ That's the whole vocabulary you need for this one endpoint. Every connection-req
 
 This was just the endpoint. In practice, a real automation setup wraps it in a few more layers, each worth its own post:
 
-- **Fleets of accounts.** A single account can only send 15 to 20 invites a day safely. Scaling past that means running many accounts in parallel.
+- **Fleets of accounts.** One account can only send 15 to 20 invites a day safely. Scaling past that means running many in parallel.
 - **Proxies.** Each account needs its own home-looking internet connection. Cheap data-centre IPs get flagged on sight.
-- **Fingerprints.** Each account has to pretend to be the same specific computer every time it appears. Same browser version, same screen size, same time zone.
+- **Fingerprints.** Each account has to pretend to be the same specific computer every time it appears. Same browser version, screen size, time zone.
 - **Warming.** New accounts can't just start firing invites. They need a slow ramp of normal browsing first.
-- **Impossible travel.** If "your" account suddenly appears in London, Berlin, and São Paulo on the same day, it gets restricted. Tools have to keep each account in one place.
+- **Impossible travel.** If "your" account suddenly appears in London, Berlin, and São Paulo on the same day, it gets restricted.
 
-If your automation tool is misbehaving and you've ruled out the endpoint-level basics, the cause is almost always one of the five above.
+If your automation tool is misbehaving and you've ruled out the endpoint-level basics, the cause is almost always one of those five.
