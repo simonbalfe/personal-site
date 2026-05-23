@@ -86,12 +86,11 @@ For the actual invite, though, no browser is strictly required, as long as the i
 
 ## What this post deliberately skipped
 
-This was just the endpoint. In practice, a real automation setup wraps it in a few more layers, each worth its own post:
+This was just the endpoint, for a single account. In practice, even running one account safely wraps it in a few more layers, each worth its own post:
 
-- **Fleets of accounts.** One account can only send 15 to 20 invites a day safely. Scaling past that means running many in parallel.
-- **Proxies.** Each account needs its own home-looking internet connection. Cheap data-centre IPs get flagged on sight.
-- **Fingerprints.** Each account has to pretend to be the same specific computer every time it appears. Same browser version, screen size, time zone.
-- **Warming.** New accounts can't just start firing invites. They need a slow ramp of normal browsing first.
-- **Impossible travel.** If "your" account suddenly appears in London, Berlin, and São Paulo on the same day, it gets restricted.
+- **Proxies.** The account needs its own home-looking internet connection. Cheap data-centre IPs get flagged on sight.
+- **Fingerprints.** The account has to pretend to be the same specific computer every time it appears. Same browser version, screen size, time zone.
+- **Warming.** A new account can't just start firing invites. It needs a slow ramp of normal browsing first.
+- **Impossible travel.** If the account suddenly appears in London, Berlin, and São Paulo on the same day, it gets restricted.
 
-If your automation tool is misbehaving and you've ruled out the endpoint-level basics, the cause is almost always one of those five.
+If your automation tool is misbehaving and you've ruled out the endpoint-level basics, the cause is almost always one of those four.
