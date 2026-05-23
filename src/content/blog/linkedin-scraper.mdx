@@ -1,0 +1,134 @@
+---
+title: 'Scraping LinkedIn at Scale Without Getting Burned'
+description: 'How I built a self-hosted LinkedIn reader that load-balances across many throwaway accounts, each in its own isolated browser identity, proxy session, and pacing window.'
+date: '2026-05-23'
+authors:
+  [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
+tags: ['Scraping', 'LinkedIn', 'TypeScript', 'Rust', 'Playwright']
+coverImage: '/images/blog/blog-7.webp'
+---
+
+## Scraping LinkedIn at Scale Without Getting Burned
+
+LinkedIn is the hardest mainstream site to scrape. Most scrapers die in a week because they leak the same fingerprint, the same IP behaviour, the same pacing rhythm across every account they touch. I wanted a setup where 20 throwaway cookies look like 20 different machines on 20 different ASNs, each behaving like a real human, none of them visibly related.
+
+This post is a walkthrough of how it works.
+
+## The premise
+
+LinkedIn watches everything: TLS handshake, HTTP/2 frame ordering, client hints, viewport, scroll behaviour, click pacing, IP reputation, cookie continuity. A scraper fails the moment its signals diverge from a real browser. A cohort of scrapers fails when they all diverge in the same way.
+
+The fix is isolation. Each cookie lives inside its own envelope:
+
+- its own residential proxy session (sticky for the life of the cookie)
+- its own fingerprint bundle (UA, client hints, viewport, Chromium version)
+- its own on-disk Chromium profile
+- its own pacing counters and daily cap
+
+Within an envelope, every signal LinkedIn sees is internally consistent. Across envelopes, nothing matches and nothing leaks.
+
+## Architecture
+
+```
+   you paste N li_at cookies
+            v
+   ingestion assigns each its own:
+     - accountId (UUID)
+     - residential proxy session (sticky, per-account)
+     - fingerprint bundle (rotated across the fleet)
+     - region preset
+            v
+   bootstrap each: light HTTP pass + brief real-Chromium visit
+            v
+   warm fleet on disk  (account.json + browser/ per account)
+            v
+   /search/* picks a warm account, paces it, runs the read
+            v
+   reactive browser refresh when an account's _px* cookies expire
+```
+
+The browser is a guest, not a resident. It shows up briefly during the one-time bootstrap per cookie, and reactively when LinkedIn's anti-bot cookies expire. Everything else runs over plain HTTP using a Rust client that impersonates Chrome at the TLS and HTTP/2 layers.
+
+## Attaching cookies
+
+You harvest `li_at` values from logged-in browsers and POST them in bulk:
+
+```bash
+curl -X POST localhost:3001/api/accounts/bulk \
+  -H 'Content-Type: application/json' \
+  -d '{"cookies":[{"li_at":"AQED...","region":"GB"},{"li_at":"AQED...","region":"US"}]}'
+```
+
+For each cookie, ingestion does four things atomically:
+
+1. **Fresh accountId (UUID).** The cookie-hash guard is per-account, so this is the unit of identity.
+2. **Per-account proxy session.** A template like `LINKEDIN_PROXY_TEMPLATE` has its `{ACCOUNT_ID}` slot replaced, giving each cookie its own sticky exit IP for life. No rotation within an account — that would trigger impossible-travel detection.
+3. **Fingerprint bundle.** Picked from a fixed pool to keep the fleet evenly distributed across pinned Chromium versions and viewport sizes. The bundle drives `userAgent`, client hints, viewport, and the `x-li-track` display dimensions for life.
+4. **Bootstrap fired in the background.** Concurrency-capped at 3 so we don't fork 50 Chromium instances at once.
+
+Poll `GET /api/accounts` to watch each cookie progress through `harvested` → `priming` → `warm`.
+
+## Two-phase bootstrap
+
+Bootstrap runs in two passes:
+
+**Phase 1 (seconds, HTTP only).** Quick requests to `linkedin.com` and `/feed/`. LinkedIn responds with the rest of the auth-class cookies: `JSESSIONID`, `bcookie`, `lidc` and friends. We collect them. If anything smells wrong (a redirect to login, a checkpoint, an `Expires=1970` header asking us to "delete" the cookie we just used) the account is marked `dead` and never used.
+
+**Phase 2 (~20 seconds, real Chromium).** A patched Playwright instance visits the feed and behaves like a person for a couple of seconds — mouse jitter, scroll, pause — giving LinkedIn's HUMAN Security script enough time to mint its `_px*` tracking cookies. The bundle's `userAgent` is set on launch so `navigator.userAgent` matches what we'll later send on HTTP. Browser tears down.
+
+After both phases the account is `warm`. One non-negotiable rule: the same `li_at` cannot be bootstrapped twice within seven days. Repeat bootstraps are LinkedIn's textbook signature for a stolen cookie being replayed from a VM farm. The guard is in code.
+
+## Searching across the warm fleet
+
+Once cookies are warm, the search API does not need an `accountId`. The selector picks one for you.
+
+```bash
+curl 'localhost:3001/api/search/people?keywords=marketing+director+London'
+```
+
+Internally:
+
+1. Load every account, filter to `state == warm`, exclude any whose daily read counter has hit the cap (default 80).
+2. Drop accounts whose log-normal pacing window has not elapsed since their last read (mean 8s, floor 3s, cap 45s — never a fixed interval).
+3. Pick the eligible account with the oldest last-use (LRU) so traffic spreads evenly. Reserve it by bumping its next-eligible time before any concurrent pick can grab it.
+4. The chosen account makes the Voyager call. On success, the daily counter ticks. The response carries `accountId` for correlation.
+5. On 403, the account flips to `refreshing` and the request retries once with a different account.
+
+If no account is eligible right now (everyone's in cooldown or capped), the API returns `503` with a `Retry-After` header.
+
+## The actual reads
+
+Reads go to LinkedIn's Voyager GraphQL endpoint — the same internal API their mobile app talks to. Each request carries the full envelope a real browser would send: cookies, the bundle's UA + `sec-ch-ua-*`, csrf token derived from the session cookie, page-matching `Referer`, and the full `sec-fetch-*` set. The TLS handshake matches Chrome at the cipher-suite and extension-ordering level.
+
+Writes (connection requests, DMs) still exist and run on a specific `accountId` you pass in. They don't go through the selector. The whole codebase is shaped around reads at scale.
+
+## Handling pushback
+
+LinkedIn doesn't say "you're a bot". It signals it through HTTP behaviour:
+
+- **302 with fresh cookies.** Merge them in and retry up to three times.
+- **401, or `Set-Cookie` with `Expires=1970` on an auth cookie.** Session revoked. State goes to `dead`; only a fresh `li_at` recovers.
+- **403.** HUMAN tripped. State goes to `refreshing`. The API auto-schedules a refresh ~60s later (capped at 2/account/day, global concurrency 1). Any account left stuck in `refreshing` from a previous process is swept on boot. A brief browser visit refreshes the `_px*` cookies and the account returns to `warm`.
+- **429.** Cap-limit too high or pacing too aggressive. Tune the daily cap down.
+- **Empty arrays where data should be.** Soft throttle. Stop for a day; halve cadence on that account.
+
+## State machine
+
+```
+warm  --voyager 403-->  refreshing  --refresh ok-->  warm
+warm  --401 / 1970-expiry / login redirect-->  dead
+```
+
+The whole point is that no single account ever takes the full load, no single proxy is ever reused across identities, and no two accounts ever exhibit the same pacing rhythm. The selector spreads traffic so that LinkedIn sees a population of distinct readers, not a cluster.
+
+## Lessons
+
+A few things I'd tell anyone trying to build something similar:
+
+- **Identity isolation is the whole game.** If two of your accounts share a fingerprint, a proxy session, or a pacing pattern, LinkedIn will burn them together. Build the system around the envelope from day one.
+- **Don't replay cookies.** Bootstrapping the same `li_at` twice in a week is the loudest signal you can send. Encode the cooldown in code, not docs.
+- **Browser as guest, not resident.** A real Chromium per account at all times wastes RAM and gives you a million subtle inconsistencies. Use it for the bootstrap and for the reactive `_px*` refresh, and stay on plain HTTP the rest of the time.
+- **Pace with a distribution, not a constant.** Constant intervals between reads are a fingerprint of their own. Log-normal with sensible floors and caps looks like a person.
+- **Treat 403 as a refresh signal, not a death.** Most 403s are HUMAN cookies aging out. A brief browser visit fixes it. Only `401` and the `Expires=1970` trick mean the cookie is actually dead.
+
+This is a throwaway-cookies-only system. Never run it against a LinkedIn account you care about. The whole architecture exists because we assume some accounts will die and the fleet has to keep working anyway.
