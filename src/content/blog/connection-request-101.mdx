@@ -1,0 +1,157 @@
+---
+title: 'How a LinkedIn Connection Request Actually Gets Automated'
+description: 'A first-principles walkthrough for sales and GTM teams: follow a single connection request from the Connect button all the way down to the hidden LinkedIn URL that does the work. Every technical term gets defined the moment it appears.'
+date: '2026-05-23'
+authors:
+  [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
+tags: ['LinkedIn', 'Outbound', 'Sales', 'Automation']
+coverImage: '/images/blog/blog-7.webp'
+---
+
+If you sell for a living, you have probably used (or been pitched) a LinkedIn automation tool. Expandi, Heyreach, Linked Helper, Dripify, Phantombuster, whatever this month's name is.
+
+They all do roughly the same thing. They all break for roughly the same reasons. And almost none of them explain what's actually happening when they "send a connection request" on your behalf.
+
+This is that explanation. No engineering background needed. Every term gets defined the first time it appears. By the end you'll understand what these tools actually do, what they can and can't get away with, and what to look for when one of them stops working.
+
+## Step 1. What happens when you click Connect by hand
+
+Before automation, the human version:
+
+1. You open Jane Doe's LinkedIn profile in your browser.
+2. You see the blue **Connect** button.
+3. You click it. A pop-up appears: "Add a note?"
+4. You type a short message and hit **Send**.
+5. Jane gets a notification. If she clicks **Accept**, you're now 1st-degree connections.
+
+That's the visible part. Underneath, a lot of invisible stuff happens. That invisible stuff is everything an automation tool has to copy.
+
+## Step 2. What your browser is actually doing
+
+When you press **Send**, your browser is not really "clicking" anything. It quietly sends a tiny letter to LinkedIn's computers asking them to create a new invitation.
+
+- That tiny letter is called an **HTTP request**.
+  - **HTTP** is the language browsers and servers use to talk. Every page load, button click, and image is an HTTP request and an HTTP response.
+- The request says, in effect: *"Hi LinkedIn, please create an invitation from me to Jane, with this note attached."*
+- LinkedIn replies with a small confirmation saying it worked (or didn't).
+
+The address the letter goes to belongs to LinkedIn's **internal API**.
+
+- An **API** (Application Programming Interface) is a set of behind-the-scenes URLs a website uses to do work, separate from the pretty pages users see.
+- LinkedIn's internal API has a name: **Voyager**. It's the same one their mobile app uses.
+- Voyager URLs all start with `linkedin.com/voyager/api/...`. You never see them, but every click on LinkedIn quietly calls one.
+
+## Step 3. The exact URL for sending a connection request
+
+When you press Send on that pop-up, your browser fires a request to this URL:
+
+```
+POST https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships
+     ?action=verifyQuotaAndCreateV2
+     &decorationId=com.linkedin.voyager.dash.deco.relationships.InvitationCreationResultWithInvitee-2
+```
+
+Translated piece by piece:
+
+- **POST** is one of the verbs HTTP uses. It means "I am sending you something to create." (The other common verb is **GET**, "give me something.")
+- `voyagerRelationshipsDashMemberRelationships` is the name of the part of LinkedIn that handles invitations and connections. Think of it as the connections department.
+- `?action=verifyQuotaAndCreateV2` is the specific job: *"check I haven't hit my weekly invite limit, and if I'm under, create the invite."*
+- `decorationId=...InvitationCreationResultWithInvitee-2` asks the response to include extra info about Jane, so the UI can update without a second request.
+
+Every connection request, sent by a human or a script, hits that same URL. There is only one front door.
+
+## Step 4. What's inside the letter
+
+The request carries a small **JSON** body. JSON is just a structured text format, like a labelled form. Three fields matter:
+
+| Field | What it is |
+| --- | --- |
+| **Invitee URN** | LinkedIn's internal ID for the person you want to connect with. A **URN** (Uniform Resource Name) looks like `urn:li:fsd_profile:ACoAAB1234...`. The URL slug (`linkedin.com/in/jane-doe`) is for humans. The URN is what LinkedIn's code uses. |
+| **Note text** | Up to about 300 characters of message. |
+| **Tracking ID** | A random ID LinkedIn uses to tie this action back to a "click" event for its own analytics. |
+
+That's basically the whole letter.
+
+## Step 5. What proves you are you
+
+A letter to LinkedIn is useless if LinkedIn doesn't know who it's from. Every request carries a stack of **headers** that, together, say: *"I am account X, using Chrome 122 on a Mac in London, currently looking at Jane's profile."*
+
+The important ones:
+
+- **Cookies.** Small text tokens your browser carries on every request. The key one is `li_at`. Anyone holding a valid `li_at` for an account can act as that account. This is why automation tools ask you to paste it in.
+- **A CSRF token.** Stands for **Cross-Site Request Forgery token**. An extra security code derived from your session cookie, so a random website can't trick your browser into firing invites in the background.
+- **User agent and client hints.** Strings like *"Chrome 122 on macOS"*.
+- **`x-li-track`.** A LinkedIn-specific header describing the device: screen size, time zone, app version.
+- **`x-li-page-instance`.** A header saying *"I was on Jane's profile page when I clicked."* LinkedIn uses this to confirm the click came from a sensible place.
+
+If any of these are missing, stale, or contradict each other, LinkedIn rejects the request or quietly drops it.
+
+## Step 6. What LinkedIn sends back
+
+If it worked, LinkedIn replies with:
+
+- An **HTTP status code** of `200`. (200 = OK. 4xx = you did something wrong. 5xx = LinkedIn is broken.)
+- A JSON body with the new **invitation URN**, in case you want to cancel it later.
+
+If it didn't work, the common replies are:
+
+- **`429 Too Many Requests`** — too many invites this week. LinkedIn caps somewhere around 100 to 200 per account per week, and it moves the cap around without warning.
+- **`403 Forbidden`** — LinkedIn thinks you're behaving like a bot. The account needs to "warm up" again before it can send more.
+- **An error body** saying *"already invited"* or *"already connected"*.
+
+You never see these codes when you click Connect in your own browser. The automation tool sees them and decides what to do next.
+
+## Step 7. How an automation tool replays this
+
+Now the actual automation. The tool sends the same request you just sent, without you clicking. The recipe:
+
+1. **Start with a logged-in account.** Specifically, get a copy of its `li_at` cookie, usually pasted in once by a human.
+2. **Get the prospect's URN.** Given a public profile URL (`linkedin.com/in/jane-doe`), the tool calls another Voyager endpoint that translates the URL slug into Jane's internal URN.
+3. **Build the same request.** Same URL, same JSON body (Jane's URN + your note), same headers (cookie, CSRF token, user agent, tracking headers).
+4. **Send it.** The tool fires the HTTP POST. LinkedIn cannot tell whether a human clicked or a script sent it, because the request looks identical.
+5. **Read the response.** `200` means logged as sent. `429` or `403` means back off and stop sending from that account for a while.
+
+That's it. "Automation" is: *make the same HTTP request a browser would make, without the browser.*
+
+## Step 8. Why automation tools still bother running a real browser
+
+If the recipe above is so clean, why do some tools also run a hidden Chrome browser in the background?
+
+A few reasons:
+
+- **Some defenses only trigger inside the browser.** LinkedIn occasionally serves an anti-bot challenge (from a company called HUMAN). Solving it requires running the JavaScript that LinkedIn puts on the page, which only a real browser can do.
+- **Faking every header by hand is fiddly.** Letting a real Chrome do it is easier than maintaining a perfect impersonation.
+- **Believability.** An account that sometimes loads the feed and scrolls for a few seconds looks more human than one that only ever fires invites.
+
+The common setup: run a real browser briefly now and then to keep the account looking alive. Send the actual invite requests as raw HTTP for speed.
+
+## Step 9. Scaling beyond one account
+
+A single account can safely send around 15 to 20 invites per day. To reach hundreds, you run a **fleet**:
+
+- Many accounts (usually throwaways).
+- Each with its own `li_at` cookie.
+- Each behind its own **proxy** — a middleman internet connection that makes the request look like it's coming from a home in, say, Manchester, not a data centre in Frankfurt.
+- Each with its own **fingerprint** — a consistent browser identity: same Chrome version, same screen size, same time zone, every time it appears.
+
+A coordinator hands each new *"connect with Jane"* job to whichever account is next in line. Accounts rest in between. The result: lots of invites going out, none of them looking like they came from the same place.
+
+This is the part that separates premium tools from cheap ones. Anyone can paste a cookie. Few people can run twenty cookies that all look unrelated.
+
+## Step 10. Where automation typically goes wrong
+
+The same failure modes show up again and again across every tool:
+
+- **Going past the weekly invite cap.** LinkedIn enforces this hard. Accounts that try to push through get restricted.
+- **Sending the same note to everyone.** LinkedIn's spam filter reads the content. Vary it.
+- **No proxy, or a cheap data-centre proxy.** LinkedIn knows the IP ranges of AWS, Google Cloud, Azure, and most cheap proxy providers, and treats them as suspicious by default.
+- **Sending at impossible speeds.** Five invites in five seconds is not a human.
+- **Reusing one cookie from many places.** If "your" account is suddenly being used from London, Berlin, and São Paulo on the same day, LinkedIn calls that **impossible travel**. Instant red flag.
+
+If your tool is suddenly underperforming, the answer is almost always one of those five.
+
+## The whole picture in one paragraph
+
+A LinkedIn connection request is, underneath everything, a single HTTP POST to a URL called `voyagerRelationshipsDashMemberRelationships?action=verifyQuotaAndCreateV2`, carrying the prospect's internal URN, your note, and a stack of headers proving you're logged in. Automation is a program that builds the same request without you clicking the button, then does it for many accounts, paced like a human, behind home-looking proxies, so LinkedIn cannot tell the difference. Everything else (warming, fingerprints, cooldowns, throttles) exists to keep that single request looking innocent.
+
+Once you understand that, every LinkedIn automation tool on the market is just a different wrapper around the same five steps.
