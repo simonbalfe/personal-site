@@ -100,3 +100,17 @@ If you want to read a tool's docs or talk to your engineer about this without ge
 | The reply codes | **HTTP status codes** | `200` = OK. `429` = weekly cap hit. `403` = looks like a bot. The tool reads these and reacts. |
 
 That's the whole vocabulary you need for this one endpoint. Every connection-request automation, on every tool, is built out of those pieces.
+
+---
+
+## What this post deliberately skipped
+
+This was just the endpoint. In practice, a real automation setup wraps it in a few more layers, each worth its own post:
+
+- **Fleets of accounts.** A single account can only send 15 to 20 invites a day safely. Scaling past that means running many accounts in parallel.
+- **Proxies.** Each account needs its own home-looking internet connection. Cheap data-centre IPs get flagged on sight.
+- **Fingerprints.** Each account has to pretend to be the same specific computer every time it appears. Same browser version, same screen size, same time zone.
+- **Warming.** New accounts can't just start firing invites. They need a slow ramp of normal browsing first.
+- **Impossible travel.** If "your" account suddenly appears in London, Berlin, and São Paulo on the same day, it gets restricted. Tools have to keep each account in one place.
+
+If your automation tool is misbehaving and you've ruled out the endpoint-level basics, the cause is almost always one of the five above.
