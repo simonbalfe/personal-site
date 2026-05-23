@@ -1,63 +1,29 @@
-# Scalar Astro Template
+# simonbalfe.com
 
-Scalar Astro Template is a premium template built by https://www.shadcnblocks.com
+Personal site and blog. Notes on outbound, automation, and whatever else I happen to be building.
 
-- [Demo](https://scalar-astro-template.vercel.app/)
-- [Documentation](https://docs.shadcnblocks.com/templates/getting-started)
+Built with Astro + Tailwind. Deployed on Cloudflare Pages.
 
-## Screenshot
-
-![Scalar Astro Template screenshot](./public/og-image.jpg)
-
-## Getting Started
+## Run locally
 
 ```bash
-# Install dependencies
-npm install
-
-# Run the development server
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Open [http://localhost:4321](http://localhost:4321) with your browser to see the result.
+Open http://localhost:4321.
 
-## Tech Stack
+## Writing a post
 
-- Astro 4.x
-- Tailwind CSS
-- shadcn/ui (Ported to Astro)
+Posts live in `src/content/blog/` as `.mdx`. Each one needs frontmatter:
 
-## Key Components
-
-### Blog Posts (`src/components/sections/blog-posts.tsx`)
-
-The blog posts component is a responsive grid layout that displays blog posts in an elegant card format. Each blog post card includes:
-
-- Featured image
-- Title and description
-- Author information with avatar
-- Reading time badge
-- Clean separators and hover effects
-
-The component accepts a `posts` array prop where each post should have the following structure:
-
-```typescript
-{
-  id: string;
-  data: {
-    title: string;
-    description: string;
-    image: string;
-    authorName: string;
-    authorImage: string;
-  }
-}
+```yaml
+---
+title: 'Post title'
+description: 'One-line summary.'
+date: '2026-05-23'
+authors: [{ name: 'simon balfe' }]
+tags: ['tag1', 'tag2']
+coverImage: '/images/blog/whatever.webp'
+---
 ```
-
-## Deploy
-
-You can deploy this template to your preferred hosting platform that supports Astro applications. Some recommended options include:
-
-- [Netlify](https://netlify.com)
-- [Vercel](https://vercel.com)
-- [Cloudflare Pages](https://pages.cloudflare.com)
