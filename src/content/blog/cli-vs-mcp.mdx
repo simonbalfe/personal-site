@@ -1,0 +1,144 @@
+---
+title: 'Take the CLI Pill: Why I Replaced Most of My MCP Servers with CLIs'
+description: 'MCP makes the model the runtime for your data pipeline. A CLI makes the model the author of it. A walkthrough of the difference, with a working lead-gen pipeline you can run in milliseconds for free.'
+date: '2026-07-06'
+authors:
+  [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
+tags: ['AI', 'MCP', 'CLI', 'Claude Code', 'GTM Engineering']
+coverImage: '/images/blog/blog-3.webp'
+---
+
+I have been switching all my janky local MCP stuff over to CLIs, and it is so much nicer that I ended up in a long argument about it. This post is that argument, written up properly, with code.
+
+First, the claim I am actually making, because it gets strawmanned instantly:
+
+**MCP is not bad. Local MCP is bad.** If a vendor offers a fully managed remote MCP endpoint (`https://api.vendor.com/mcp`, you paste a URL, done), fine. But if using their MCP means cloning a repo, installing dependencies, and running a Node process on your machine that does nothing except wrap their REST API, you are holding it wrong. Just cook your own CLI from the API docs, or find one someone already open sourced.
+
+A CLI is a more natural API wrapper than an MCP server is. Here is why.
+
+## The example that started it
+
+Someone in the thread gave this as the case where MCP shines. A multi-step lead-gen flow inside Claude:
+
+1. One MCP gives you company data
+2. A Claude pass filters out non-ICP companies
+3. A second MCP finds people at those companies
+4. A second Claude pass filters out non-persona contacts
+5. A third MCP enriches the survivors
+
+Sounds reasonable. "AI checks between every step of my process."
+
+But look at what a "Claude pass" actually is. The MCP returns JSON. That JSON lands in the model's context. The model reads every record, token by token, decides which ones match `industry == SaaS && employees >= 50 && country == UK`, and then re-emits the survivors, token by token, so the next MCP can consume them.
+
+That is a paid, slow, nondeterministic model inference doing the job of a boolean check on three fields.
+
+## The same pipeline as a CLI
+
+To make this concrete I built a fake CLI called `leadgen`. One small Go binary, three subcommands, fake embedded data, each one standing in for one of the MCPs:
+
+- `leadgen companies` is the company data source
+- `leadgen people` reads companies on stdin and emits contacts
+- `leadgen enrich` reads people on stdin and adds email and LinkedIn
+
+Everything speaks JSONL: one JSON object per line on stdout. And the two "Claude passes" become `jq` filters:
+
+```bash
+leadgen companies \
+  | jq -c 'select(.industry=="SaaS" and .employees >= 50 and .country=="UK")' \
+  | leadgen people \
+  | jq -c 'select(.role | test("Head|VP|CMO|Marketing"))' \
+  | leadgen enrich
+```
+
+Output:
+
+```json
+{"name":"Sarah Chen","role":"VP Marketing","company":"Acme SaaS","domain":"acmesaas.io","email":"s.chen@acmesaas.io","linkedin":"linkedin.com/in/sarah-chen","verified":true}
+{"name":"Priya Patel","role":"Head of Growth","company":"Acme SaaS","domain":"acmesaas.io","email":"p.patel@acmesaas.io","linkedin":"linkedin.com/in/priya-patel","verified":false}
+{"name":"Marcus Reed","role":"Head of Marketing","company":"Pipeline AI","domain":"pipeline.ai","email":"m.reed@pipeline.ai","linkedin":"linkedin.com/in/marcus-reed","verified":false}
+```
+
+8 companies in, 2 pass ICP, 5 people found, 3 pass persona, 3 enriched leads out.
+
+The whole pipeline runs in 6 milliseconds. Zero tokens. Every step maps one to one onto the MCP version:
+
+| MCP flow | CLI flow |
+| --- | --- |
+| MCP #1 returns companies into context | `leadgen companies` to stdout |
+| Claude pass filters non-ICP | `jq 'select(...)'` |
+| MCP #2 finds people, into context again | `leadgen people` |
+| Claude pass filters non-persona | `jq 'select(.role \| test(...))'` |
+| MCP #3 enriches | `leadgen enrich` |
+
+## The model should be the author, not the runtime
+
+This is the core of it.
+
+In the MCP flow, trace where the data physically moves. MCP #1 returns companies into Claude's context. Claude generates tokens to filter them. That output feeds MCP #2, whose results land back in context. Claude filters again. MCP #3 enriches. Every arrow between steps IS a model inference. The data cannot get from step 1 to step 2 without the model reading it and re-emitting it. The model is the execution engine the data flows through. Stop the model and the pipeline stops existing. Run it tomorrow and you pay full inference again.
+
+In the CLI flow, the runtime is the shell. Data moves through OS pipes with no model anywhere in the path. Claude's job was to write the one-liner, once. After that the pipeline runs standalone, in milliseconds, forever, for free.
+
+Author writes the pipeline once. Runtime executes it every time. You want the expensive intelligent thing to be the author.
+
+## What this buys you
+
+**Cost.** Filtering in jq is free. The MCP flow pays inference on every intermediate step, every run, forever.
+
+**Speed.** Shell pipeline: milliseconds. MCP flow: a multi-second model turn between every single tool call, because the agent has to go back and forth for each step.
+
+**Correctness.** `select(.employees >= 50)` never drops a row and never hallucinates a field. A model pass can do both, and it gets worse as the data grows. At 8 records it will probably behave. At 500 it starts degrading. jq does not notice the difference.
+
+**Scale.** Pipes handle millions of rows. The MCP flow physically cannot process more data than fits in a context window, and quality decays well before the ceiling.
+
+**Composability.** stdout plugs into fifty years of tooling: jq, grep, sort, awk, files, cron, other CLIs, DuckDB if you want SQL over the output. An MCP result plugs into exactly one consumer, the model. Same JSON, wrong location.
+
+**Inspectability.** Every intermediate stage can be redirected to a file, diffed, and re-run from that point. MCP intermediates are invisible tokens inside a context you cannot touch.
+
+**Reusability.** The end product is a script. Claude chains a bunch of CLIs in bash, you iterate until it is right, then you one-shot it forever. The token burn drops to effectively nothing once you offload to scripts. Compare that with the agent spending ten minutes figuring out the right sequence of MCP calls, again, every time.
+
+## "But the MCP gives the model context about the tool"
+
+This is the strongest real argument for MCP: the server ships tool schemas, so the model knows what calls exist and what parameters they take.
+
+It does not hold up, because the context disparity is trivially closed on the CLI side:
+
+- A good `--help` on every subcommand. The model runs it, reads it, and knows the interface. This is literally what `--help` was invented for.
+- A short markdown file describing the CLI, loaded as a skill or dropped in the repo. Claude Code, Codex, and friends all read these natively.
+
+At some point "write an MCP server" is just a very expensive way of avoiding "write better docs."
+
+And the CLI is already in the model's native habitat. These agents live in a shell. Bash is the one tool they have all been heavily trained on. A CLI is not a foreign interface you are teaching the model; it is the interface the model is best at.
+
+## Where this matters in practice: the Google estate
+
+The "just use an API key directly" crowd is half right. A raw key and curl is calm, and for a simple API it is enough.
+
+But it breaks down when you use an API a lot, or when auth is not a simple key. Google is the canonical case. Ads, Search Console, Analytics, Tag Manager, Business Profile: none of them hand you a simple key. It is OAuth flows, token refresh, developer tokens, scoped consent screens. You do not want the model re-deriving that dance every session, and you definitely do not want some community MCP server holding your refresh tokens.
+
+So I have a small CLI for each: `gads`, `ggsc`, `gga4`, `ggtm`, `ggmb`. Each one owns its auth, exposes clean subcommands, and prints JSON. The agent composes them like anything else in the shell:
+
+```bash
+ggsc query --site sc-domain:example.com --dimensions query --days 28 \
+  | jq -c 'select(.impressions > 500 and .position > 8)' \
+  | gads keywords add --campaign 1234 --from-stdin
+```
+
+Search Console finds queries with impressions but bad rank, jq filters them, Google Ads picks them up as keywords. Three products, one line, no model in the data path.
+
+## Where MCP actually earns its place
+
+To be fair to the other side, because the point is not "MCP bad":
+
+- **Fuzzy judgment steps.** If the filter is "does this company's homepage suggest they sell to ecommerce brands?", that is real model work, not a field check. A model pass is the right tool there. The demo's filters were structured field checks, which is exactly where a model pass is pure waste.
+- **Remote managed servers.** A vendor-hosted `/mcp` endpoint with auth handled server-side is a legitimately nice integration surface. My rule of thumb: if the MCP makes you install or run something locally, it is bad. If it is a URL, it might be good.
+- **Actions, not data.** Sending the email, booking the meeting, posting the message. Single-shot side effects where there is no pipeline to speak of.
+
+The sharp version of the claim: **for structured data moving between tools, the model should write the pipeline, not be the pipeline.**
+
+## The wider point
+
+None of this is a new idea. It is the Unix philosophy wearing an AI costume. Small programs, text streams, composition. It is what the entire devops world already runs on, and it is why every serious infra tool ships a CLI first.
+
+GTM engineering is heading the same direction. The work is getting more technical, the people doing it are getting more technical, and the toolchain should follow. The MCP psyop says every integration needs a bespoke server speaking a bespoke protocol into a context window. The CLI pill says: print JSON to stdout and let the agent do what it is already brilliant at.
+
+Take the pill.
