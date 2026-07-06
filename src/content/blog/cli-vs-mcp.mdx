@@ -1,6 +1,6 @@
 ---
-title: 'Take the CLI Pill: Why I Replaced Most of My MCP Servers with CLIs'
-description: 'MCP makes the model the runtime for your data pipeline. A CLI makes the model the author of it. A walkthrough of the difference, with a working lead-gen pipeline you can run in milliseconds for free.'
+title: 'The Argument That Made Me Quit MCPs (Mostly)'
+description: 'A story about a lead list, a five-step "AI workflow", and the moment I realised Claude was doing a job a one-line command could do in 6 milliseconds for free. Written for sales and GTM people using Claude Code, not engineers.'
 date: '2026-07-06'
 authors:
   [{ name: 'simon balfe', image: '/images/blog/authors/robert-austin.webp' }]
@@ -8,137 +8,110 @@ tags: ['AI', 'MCP', 'CLI', 'Claude Code', 'GTM Engineering']
 coverImage: '/images/blog/blog-3.webp'
 ---
 
-I have been switching all my janky local MCP stuff over to CLIs, and it is so much nicer that I ended up in a long argument about it. This post is that argument, written up properly, with code.
+A few weeks ago I got into an argument in a Slack community. It started when I said something mildly spicy:
 
-First, the claim I am actually making, because it gets strawmanned instantly:
+> "So much nicer switching all the janky local MCP stuff to CLI. General rule: if an MCP makes you install or run something on your machine, it's bad."
 
-**MCP is not bad. Local MCP is bad.** If a vendor offers a fully managed remote MCP endpoint (`https://api.vendor.com/mcp`, you paste a URL, done), fine. But if using their MCP means cloning a repo, installing dependencies, and running a Node process on your machine that does nothing except wrap their REST API, you are holding it wrong. Just cook your own CLI from the API docs, or find one someone already open sourced.
+Someone replied with the pill emoji. Someone else told me to "take the CLI pill." And then someone made an actually good argument, which is the fun kind, because it gave me an excuse to build a demo and write this post.
 
-A CLI is a more natural API wrapper than an MCP server is. Here is why.
+If you're in sales or GTM and you use Claude Code, this post is for you. No engineering degree required. I promise the one code block in here is readable.
 
-## The example that started it
+## First, what these words mean
 
-Someone in the thread gave this as the case where MCP shines. A multi-step lead-gen flow inside Claude:
+Two ways to plug tools into Claude:
 
-1. One MCP gives you company data
-2. A Claude pass filters out non-ICP companies
-3. A second MCP finds people at those companies
-4. A second Claude pass filters out non-persona contacts
-5. A third MCP enriches the survivors
+**MCP** is the shiny new thing. You "connect" an app to Claude (your CRM, an enrichment tool, whatever), and Claude can call it directly mid-conversation. Every AI vendor is pushing these right now. That push is what my group chat calls the MCP psyop.
 
-Sounds reasonable. "AI checks between every step of my process."
+**CLI** is the old thing. Command line interface. Little text commands you type into a terminal. `git push`. That world. It's been around for fifty years, it looks like hacker-movie nonsense, and it turns out to be the thing Claude is best at, because Claude Code literally lives in a terminal.
 
-But look at what a "Claude pass" actually is. The MCP returns JSON. That JSON lands in the model's context. The model reads every record, token by token, decides which ones match `industry == SaaS && employees >= 50 && country == UK`, and then re-emits the survivors, token by token, so the next MCP can consume them.
+My claim is not "MCP bad." If a vendor hosts the MCP for you and connecting is just pasting a link, fine, lovely. My claim is narrower: when the job is moving data between tools, which is most of GTM work, the CLI way is faster, cheaper, and more reliable. And the difference is not small.
 
-That is a paid, slow, nondeterministic model inference doing the job of a boolean check on three fields.
+## The argument
 
-## The same pipeline as a CLI
+The good counter-argument came from Mat. He said MCPs shine because you get "AI checks between every step." His example, and it's a totally normal GTM workflow:
 
-To make this concrete I built a fake CLI called `leadgen`. One small Go binary, three subcommands, fake embedded data, each one standing in for one of the MCPs:
+1. One MCP pulls a list of companies
+2. Claude reads the list and filters out the ones that don't fit your ICP
+3. A second MCP finds people at the surviving companies
+4. Claude reads again and filters out the wrong personas
+5. A third MCP enriches the keepers with emails
 
-- `leadgen companies` is the company data source
-- `leadgen people` reads companies on stdin and emits contacts
-- `leadgen enrich` reads people on stdin and adds email and LinkedIn
+Five steps. Sounds great. Claude is your smart assistant checking the work between every stage. What's not to like?
 
-Everything speaks JSONL: one JSON object per line on stdout. And the two "Claude passes" become `jq` filters:
+Here's the thing I couldn't let go. Look at steps 2 and 4. What is Claude actually *checking*?
+
+"Filter out non-ICP companies" meant: keep the ones where industry is SaaS, headcount is 50 plus, and country is UK. That's it. That's not judgement. That's not intelligence. That's reading a spreadsheet column and deleting rows. And in the MCP version, you're paying your most expensive, slowest, occasionally-daydreaming employee (the AI) to do it. Every row gets read by Claude, thought about by Claude, and retyped by Claude before the next tool can even see it.
+
+Imagine hiring a brilliant consultant at £500 an hour and asking them to personally retype your lead list between every tool in your stack. Twice. Every time you run it.
+
+## So I built the receipt
+
+To settle it, I built a fake little tool called `leadgen` with made-up companies and people inside it, and asked Claude Code to run Mat's exact five-step workflow the CLI way. Here's the entire pipeline:
 
 ```bash
 leadgen companies \
-  | jq -c 'select(.industry=="SaaS" and .employees >= 50 and .country=="UK")' \
+  | jq 'select(.industry=="SaaS" and .employees >= 50 and .country=="UK")' \
   | leadgen people \
-  | jq -c 'select(.role | test("Head|VP|CMO|Marketing"))' \
+  | jq 'select(.role | test("Head|VP|CMO|Marketing"))' \
   | leadgen enrich
 ```
 
-Output:
+Don't glaze over. Read it like a sentence, top to bottom:
 
-```json
-{"name":"Sarah Chen","role":"VP Marketing","company":"Acme SaaS","domain":"acmesaas.io","email":"s.chen@acmesaas.io","linkedin":"linkedin.com/in/sarah-chen","verified":true}
-{"name":"Priya Patel","role":"Head of Growth","company":"Acme SaaS","domain":"acmesaas.io","email":"p.patel@acmesaas.io","linkedin":"linkedin.com/in/priya-patel","verified":false}
-{"name":"Marcus Reed","role":"Head of Marketing","company":"Pipeline AI","domain":"pipeline.ai","email":"m.reed@pipeline.ai","linkedin":"linkedin.com/in/marcus-reed","verified":false}
-```
+- **Get the companies.**
+- **Keep only UK SaaS with 50+ people.** (That `jq` thing is a free filtering tool. The `|` symbol is a pipe: it pours the output of one step into the next, like water.)
+- **Find the people at those companies.**
+- **Keep only the marketing decision-makers.**
+- **Enrich them with emails.**
 
-8 companies in, 2 pass ICP, 5 people found, 3 pass persona, 3 enriched leads out.
+Same five steps as Mat's version. Same two "AI checks" in the middle, except now they're filters instead of a model reading and retyping everything.
 
-The whole pipeline runs in 6 milliseconds. Zero tokens. Every step maps one to one onto the MCP version:
+It ran. 8 companies went in. 2 survived the ICP filter. 5 people were found. 3 had the right titles. 3 enriched leads came out the other end, emails and LinkedIn URLs attached.
 
-| MCP flow | CLI flow |
-| --- | --- |
-| MCP #1 returns companies into context | `leadgen companies` to stdout |
-| Claude pass filters non-ICP | `jq 'select(...)'` |
-| MCP #2 finds people, into context again | `leadgen people` |
-| Claude pass filters non-persona | `jq 'select(.role \| test(...))'` |
-| MCP #3 enriches | `leadgen enrich` |
+Total time: **6 milliseconds**. Total AI cost: **zero**. A blink lasts about 100 milliseconds, so the whole pipeline ran roughly sixteen times before you could blink once.
 
-## The model should be the author, not the runtime
+## The one idea to take away
 
-This is the core of it.
+Here's the mental model that made it all click for me, and it's the only thing in this post worth remembering:
 
-In the MCP flow, trace where the data physically moves. MCP #1 returns companies into Claude's context. Claude generates tokens to filter them. That output feeds MCP #2, whose results land back in context. Claude filters again. MCP #3 enriches. Every arrow between steps IS a model inference. The data cannot get from step 1 to step 2 without the model reading it and re-emitting it. The model is the execution engine the data flows through. Stop the model and the pipeline stops existing. Run it tomorrow and you pay full inference again.
+**In the MCP workflow, Claude is the pipe. In the CLI workflow, Claude is the plumber.**
 
-In the CLI flow, the runtime is the shell. Data moves through OS pipes with no model anywhere in the path. Claude's job was to write the one-liner, once. After that the pipeline runs standalone, in milliseconds, forever, for free.
+MCP version: the data physically cannot get from step 1 to step 2 without travelling *through Claude*. Claude reads every company, thinks about every company, and retypes every company. Then does it again for the people list. The AI is the plumbing your data flows through. And this plumbing charges by the token, takes seconds per step, and very occasionally drops a lead or invents one, because that's what AI does when you make it retype lists.
 
-Author writes the pipeline once. Runtime executes it every time. You want the expensive intelligent thing to be the author.
+CLI version: you ask Claude to *build* the pipeline. It writes that one command, once. After that, the data flows through the pipes on its own. No AI in the middle. You can run it tomorrow, run it on 50,000 companies instead of 8, stick it on a schedule, and it costs nothing and never gets tired.
 
-## What this buys you
+You hired the smart expensive thing. Use it to design the system, not to *be* the system.
 
-**Cost.** Filtering in jq is free. The MCP flow pays inference on every intermediate step, every run, forever.
+## "But I ran it in Claude Code and it still took a while?"
 
-**Speed.** Shell pipeline: milliseconds. MCP flow: a multi-second model turn between every single tool call, because the agent has to go back and forth for each step.
+Yes. When I recorded the demo, Claude narrated between stages, and each bit of narration is Claude thinking, which takes seconds. Fair. But notice what was slow: the *talking*, not the *pipeline*. The data never touched Claude. And the whole point is you only need Claude in the room the first time. The finished command runs forever without it.
 
-**Correctness.** `select(.employees >= 50)` never drops a row and never hallucinates a field. A model pass can do both, and it gets worse as the data grows. At 8 records it will probably behave. At 500 it starts degrading. jq does not notice the difference.
+Compare that to the MCP version, where the slow expensive talking IS the workflow, unavoidably, on every single run, forever.
 
-**Scale.** Pipes handle millions of rows. The MCP flow physically cannot process more data than fits in a context window, and quality decays well before the ceiling.
+## What this means for your actual GTM stack
 
-**Composability.** stdout plugs into fifty years of tooling: jq, grep, sort, awk, files, cron, other CLIs, DuckDB if you want SQL over the output. An MCP result plugs into exactly one consumer, the model. Same JSON, wrong location.
+This isn't a toy distinction. Swap the fake tool for real ones and it's your Tuesday:
 
-**Inspectability.** Every intermediate stage can be redirected to a file, diffed, and re-run from that point. MCP intermediates are invisible tokens inside a context you cannot touch.
+- Pull queries from Google Search Console where you're getting seen but ranking badly
+- Filter to the ones worth chasing
+- Push them into Google Ads as keywords
 
-**Reusability.** The end product is a script. Claude chains a bunch of CLIs in bash, you iterate until it is right, then you one-shot it forever. The token burn drops to effectively nothing once you offload to scripts. Compare that with the agent spending ten minutes figuring out the right sequence of MCP calls, again, every time.
+I do exactly this with small command-line tools for the Google products (Ads, Search Console, Analytics, Tag Manager, Business Profile). One line, three Google products, no AI retyping anything in the middle. Claude wrote the line; the shell runs it.
 
-## "But the MCP gives the model context about the tool"
+And here's the part sales people underestimate: **you don't need to learn to write any of this.** You have Claude Code. You describe the workflow in English, Claude writes the command, you sanity-check the output, and now you own a reusable asset. The terminal stopped being a technical barrier the day you got an AI that speaks fluent terminal.
 
-This is the strongest real argument for MCP: the server ships tool schemas, so the model knows what calls exist and what parameters they take.
+## Where MCPs genuinely earn their keep
 
-It does not hold up, because the context disparity is trivially closed on the CLI side:
+Being fair, because "everything about MCP is a psyop" would be its own psyop:
 
-- A good `--help` on every subcommand. The model runs it, reads it, and knows the interface. This is literally what `--help` was invented for.
-- A short markdown file describing the CLI, loaded as a skill or dropped in the repo. Claude Code, Codex, and friends all read these natively.
+- **Real judgement calls.** If the filter is "does this company's website *feel* like they sell to ecommerce brands?", that's actual thinking, and an AI pass earns its cost. The trick is noticing that most GTM filters aren't that. "50+ employees, UK, SaaS" is a spreadsheet filter wearing an AI costume.
+- **Hosted connections.** When a vendor runs the MCP on their servers and you just paste a link, with login handled for you, that's a genuinely nice way to connect things. My rule survives: if it makes you install and run something on your laptop, walk away.
+- **Doing things rather than moving data.** Send the email, book the meeting, post the message. One-shot actions, no pipeline, MCP is fine.
 
-At some point "write an MCP server" is just a very expensive way of avoiding "write better docs."
+## The pill
 
-And the CLI is already in the model's native habitat. These agents live in a shell. Bash is the one tool they have all been heavily trained on. A CLI is not a foreign interface you are teaching the model; it is the interface the model is best at.
+The funny thing is none of this is new. Small tools, plain text, pipes: it's how the entire infrastructure world has worked for decades. GTM is just now becoming technical enough to inherit it, and we happen to be inheriting it at the exact moment an AI showed up that can write it all for us.
 
-## Where this matters in practice: the Google estate
+So next time a vendor's pitch is "connect our MCP and let the AI orchestrate your workflow," ask one question: is the AI here making judgement calls, or is it retyping my lead list between tools?
 
-The "just use an API key directly" crowd is half right. A raw key and curl is calm, and for a simple API it is enough.
-
-But it breaks down when you use an API a lot, or when auth is not a simple key. Google is the canonical case. Ads, Search Console, Analytics, Tag Manager, Business Profile: none of them hand you a simple key. It is OAuth flows, token refresh, developer tokens, scoped consent screens. You do not want the model re-deriving that dance every session, and you definitely do not want some community MCP server holding your refresh tokens.
-
-So I have a small CLI for each: `gads`, `ggsc`, `gga4`, `ggtm`, `ggmb`. Each one owns its auth, exposes clean subcommands, and prints JSON. The agent composes them like anything else in the shell:
-
-```bash
-ggsc query --site sc-domain:example.com --dimensions query --days 28 \
-  | jq -c 'select(.impressions > 500 and .position > 8)' \
-  | gads keywords add --campaign 1234 --from-stdin
-```
-
-Search Console finds queries with impressions but bad rank, jq filters them, Google Ads picks them up as keywords. Three products, one line, no model in the data path.
-
-## Where MCP actually earns its place
-
-To be fair to the other side, because the point is not "MCP bad":
-
-- **Fuzzy judgment steps.** If the filter is "does this company's homepage suggest they sell to ecommerce brands?", that is real model work, not a field check. A model pass is the right tool there. The demo's filters were structured field checks, which is exactly where a model pass is pure waste.
-- **Remote managed servers.** A vendor-hosted `/mcp` endpoint with auth handled server-side is a legitimately nice integration surface. My rule of thumb: if the MCP makes you install or run something locally, it is bad. If it is a URL, it might be good.
-- **Actions, not data.** Sending the email, booking the meeting, posting the message. Single-shot side effects where there is no pipeline to speak of.
-
-The sharp version of the claim: **for structured data moving between tools, the model should write the pipeline, not be the pipeline.**
-
-## The wider point
-
-None of this is a new idea. It is the Unix philosophy wearing an AI costume. Small programs, text streams, composition. It is what the entire devops world already runs on, and it is why every serious infra tool ships a CLI first.
-
-GTM engineering is heading the same direction. The work is getting more technical, the people doing it are getting more technical, and the toolchain should follow. The MCP psyop says every integration needs a bespoke server speaking a bespoke protocol into a context window. The CLI pill says: print JSON to stdout and let the agent do what it is already brilliant at.
-
-Take the pill.
+If it's retyping, take the pill.
